@@ -22,5 +22,9 @@ if not model:
     sys.exit("No model in models/. Run: python scripts/get_model.py")
 cmd = [str(server), "-m", str(model), "-t", "2", "-c", "1024", "-np", "1", "--cache-ram", "0", "-b", "256", "-ub", "128", "-fa", "on",
        "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "127.0.0.1", "--port", "8080"]
+# Weight repacking: on ARM (the vehicle target) we disable it to save ~380 MB; on x86 laptops it is ~30% faster,
+# so we keep it unless --low-mem is given.
+if platform.machine().lower() in ("arm64", "aarch64") or "--low-mem" in sys.argv:
+    cmd.append("--no-repack")
 print(" ".join(cmd))
 sys.exit(subprocess.call(cmd))

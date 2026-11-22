@@ -542,8 +542,9 @@ def signal_trend(ctx: Ctx, q: str, plan: dict) -> Answer:
     trend = "stable" if abs(slope) < 0.05 * max(abs(np.mean(daily)), 1e-6) / 4 else ("rising" if slope > 0 else "falling")
     a.what = (f"{label.capitalize()} {phrase(w)}: average {r1(np.mean(r['mean']))} {unit}, highest "
               f"{r1(r['max'][i])} {unit} on {fmt_time(r['minute'][i] * 60)}, lowest {r1(r['min'][j])} {unit}.")
-    a.why.append(f"Trend: {trend} ({r2(slope):+} {unit} per week).")
-    if key == "battery_health":
+    if w.days() > 2:                                   # a trend needs more than a day of data
+        a.why.append(f"Trend: {trend} ({r2(slope):+} {unit} per week).")
+    if key == "battery_health" and a.why:
         a.why[-1] = f"Trend: {trend}; battery health is not declining measurably over this period." if trend == "stable" else a.why[-1]
     return a
 
