@@ -37,6 +37,10 @@ TYRES = [V + f"Chassis.Axle.Row{r}.Wheel.{s}.Tire.Pressure" for r, s in ((1, "Le
 WHEEL_NAMES = ["front-left", "front-right", "rear-left", "rear-right"]
 
 TRIGGERS = {"WARNING_ON", "DTC_SET", "ADAS_DISENGAGEMENT", "ANOMALY"}
+# Signals published only when they change (Android VHAL on-change properties): valid until replaced.
+STICKY = {V + "Private.Road.Type", V + "Powertrain.Transmission.SelectedGear", V + "Cabin.HVAC.IsAirConditioningActive",
+          V + "Cabin.HVAC.Station.Row1.Driver.Temperature"}
+STICKY_S = 1800.0
 PRIO = {"can": 2, "someip": 2, "vhal": 1}
 FRESH_S = 15.0
 
@@ -402,7 +406,8 @@ class Engine:
     def _tick(self, sec):
         if max(self.last.values()) < sec:
             return
-        snap = {p: v for p, (v, t, _) in self.state.items() if sec - t <= FRESH_S}
+        snap = {p: v for p, (v, t, _) in self.state.items()
+                if sec - t <= (STICKY_S if p in STICKY else FRESH_S)}
         if not snap:
             return
         self.snapshots += 1

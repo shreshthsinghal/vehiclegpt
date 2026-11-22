@@ -208,6 +208,9 @@ class VhalWriter:
         self._emit(t[0], "HVAC_AC_ON", True, area=0x31)
         self._emit(t[0], "HVAC_TEMPERATURE_SET", 22.5, area=0x1)
         out = sess.meta.get("purpose", "").endswith(("_out", "_am", "errand"))
+        road = s["road"]
+        for i in np.flatnonzero(np.diff(road) != 0) + 1:                # on-change property
+            self._emit(t[i], "VENDOR_ROAD_TYPE", int(road[i]))
         for i in range(0, t.size, 5):
             v = s["speed_kmh"][i] / 3.6
             self.heading += self.rng.normal(0, 0.15 if s["road"][i] == 0 else 0.02)

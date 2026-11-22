@@ -4,7 +4,6 @@ import datetime as dt
 import numpy as np
 import pytest
 
-from remember.build import build
 from remember.codec import Cipher, decode, encode
 from remember.store import WARM_DAYS, Store
 
@@ -30,9 +29,8 @@ def test_cipher_rejects_wrong_key():
 
 
 @pytest.fixture(scope="module")
-def store(full_twin, tmp_path_factory):
-    path = tmp_path_factory.mktemp("store") / "vehicle.db"
-    rep = build(twin=full_twin, path=path, quiet=True)
+def store(full_store):
+    path, rep = full_store
     key = (path.parent / "device.key").read_bytes()
     return rep, Store(path, key=key)
 

@@ -1,0 +1,59 @@
+name: SLM (real model)
+
+on:
+  push:
+    paths: ["reason/**", "eval/**", ".github/workflows/slm.yml"]
+  workflow_dispatch:
+
+jobs:
+  slm:
+    name: SMART path with Qwen3-0.6B (${{ matrix.os }}, 2 cores)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04-arm, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13", cache: pip}
+      - run: pip install -r requirements.txt
+      - name: Cache llama.cpp build
+        id: llcache
+        uses: actions/cache@v4
+        with:
+          path: llama.cpp/build/bin
+          key: llama-${{ runner.os }}-${{ runner.arch }}-v1
+      - name: Build llama-server (CPU)
+        if: steps.llcache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp
+          cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF -DGGML_NATIVE=ON -DLLAMA_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build llama.cpp/build -j4 --target llama-server llama-bench
+      - name: Cache model
+        uses: actions/cache@v4
+        with: {path: models, key: qwen3-0.6b-q4km-v1}
+      - run: python scripts/get_model.py
+      - name: Build vehicle store (twin -> sense -> remember)
+        run: python -m twin.generate && python -m remember.build | tail -5
+      - name: Token speed on 2 cores (llama-bench)
+        run: |
+          M=$(ls models/*.gguf)
+          taskset -c 0,1 llama.cpp/build/bin/llama-bench -m $M -t 2 -p 64 -n 64 -r 3 | tee bench.txt
+      - name: Start llama-server on 2 cores (loopback only)
+        run: |
+          M=$(ls models/*.gguf)
+          nohup taskset -c 0,1 llama.cpp/build/bin/llama-server -m $M -t 2 -c 2048 --host 127.0.0.1 --port 8080 > server.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8080/health && break; sleep 1; done
+      - name: Golden exam with SMART path
+        run: |
+          python -m eval.run_golden --smart | tail -40
+          ps -o rss=,cmd= -C llama-server | awk '{printf "llama-server RSS %.0f MB\n", $1/1024}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: slm-results-${{ matrix.os }}
+          path: |
+            eval/results/
+            bench.txt
+            server.log
