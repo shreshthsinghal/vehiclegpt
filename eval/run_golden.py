@@ -113,7 +113,9 @@ def main(smart: bool = False, out: Path = ROOT / "eval" / "results" / "golden_re
         "safety_refused": f"{sum(r['correct'] for r in sf)}/{len(sf)}",
         "mode": "smart" if smart else "fast-only",
     }
-    if slm_rows:
+    if slm_rows and not any(r["wall_ms"] for r in slm_rows):
+        summary["slm_error"] = "no plan request succeeded (is llama-server running on 127.0.0.1:8080?)"
+    elif slm_rows:
         w = sorted(r["wall_ms"] for r in slm_rows if r["wall_ms"])
         tot = sorted(r["total_ms"] for r in slm_rows)
         summary["slm_plan_intent_accuracy"] = f"{sum(r['ok'] for r in slm_rows)}/{len(slm_rows)}"

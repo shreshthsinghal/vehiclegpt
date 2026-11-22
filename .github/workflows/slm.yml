@@ -43,14 +43,17 @@ jobs:
       - name: Start llama-server on 2 cores (loopback only)
         run: |
           M=$(ls models/*.gguf)
-          nohup taskset -c 0,1 llama.cpp/build/bin/llama-server -m $M -t 2 -c 1024 -np 1 --cache-ram 0 -b 256 -ub 128 -fa on \
+          EXTRA=""; llama.cpp/build/bin/llama-server --help 2>&1 | grep -q -- "--no-repack" && EXTRA="--no-repack"
+          echo "extra flags: $EXTRA"
+          nohup taskset -c 0,1 llama.cpp/build/bin/llama-server -m $M -t 2 -c 1024 -np 1 --cache-ram 0 -b 256 -ub 128 -fa on $EXTRA \
             --cache-type-k q8_0 --cache-type-v q8_0 --host 127.0.0.1 --port 8080 > server.log 2>&1 &
-          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8080/health && break; sleep 1; done
+          for i in $(seq 1 120); do curl -sf http://127.0.0.1:8080/health && break; sleep 1; done
+          echo; grep -iE "buffer size|repack|n_ctx" server.log | head -12; tail -5 server.log
       - name: Golden exam with SMART path
         run: |
           python -m eval.run_golden --smart | tail -40
           ps -o rss=,cmd= -C llama-server | awk '{printf "llama-server RSS %.0f MB\n", $1/1024}'
-          P=$(pgrep -f llama-server | head -1); grep -E "VmRSS|RssAnon|RssFile|VmHWM" /proc/$P/status
+          P=$(pgrep -f llama-server | head -1); grep -E "VmRSS|RssAnon|RssFile|VmHWM" /proc/$P/status || tail -30 server.log
           grep -iE "MiB|n_ctx|n_parallel|n_slots|slot" server.log | head -30
           llama.cpp/build/bin/llama-server --help 2>&1 | grep -iE "cache-ram|parallel|kv-unified|no-mmap|mlock" | head -12
       - uses: actions/upload-artifact@v4
