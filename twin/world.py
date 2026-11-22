@@ -153,7 +153,7 @@ def plan_trips(seed: int = 42) -> list[PlannedTrip]:
         else:                                              # weekend errand
             trips.append(PlannedTrip(day, ts(day, 11, 0) + rng.uniform(0, 1800), "city",
                                      rng.uniform(6, 12), 1.0, "weekend_errand"))
-    return trips
+    return sorted(trips, key=lambda tr: tr.start)          # strict time order (bug found by SENSE, Phase 2)
 
 
 def dc_charge_window(day: int) -> tuple[float, float] | None:

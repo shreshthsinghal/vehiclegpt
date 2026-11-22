@@ -57,9 +57,8 @@ def test_week_outputs(week):
 
 
 @pytest.mark.slow
-def test_full_answer_key(tmp_path):
-    main(days=56, out=tmp_path)
-    t = json.loads((tmp_path / "truth" / "truth.json").read_text())
+def test_full_answer_key(full_twin):
+    t = json.loads((full_twin / "truth" / "truth.json").read_text())
     s01 = t["S01_range_drop"]
     assert s01["explained_shares_pct"]["ac_heat"] > s01["explained_shares_pct"]["stop_go_traffic"]
     assert s01["displayed_range_change_pct"] < -5 and s01["tyres_normal_in_window_b"]

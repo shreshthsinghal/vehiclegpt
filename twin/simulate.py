@@ -150,9 +150,10 @@ def simulate_trip(trip: W.PlannedTrip, state: CarState, seed: int, heat: bool = 
     wiper = np.select([rain > 0.6, rain > 0.3, rain > 0.05], [3, 2, 1], 0)
     lowbeam = ((hour >= 18.2) | (hour < 6.5) | (rain > 0.6)).astype(int)
     lv = np.full(n, 14.1) + rng.normal(0, 0.03, n)
-    rest_v = W.lv_resting_voltage(day)
+    first_start = trip.purpose in ("commute_am", "highway_out", "weekend_errand")   # first wake after the night
+    rest_v = W.lv_resting_voltage(day) if first_start else 12.62
     lv[0] = rest_v
-    if trip.purpose == "commute_am" and day in W.LV_DRAIN_DAYS:
+    if first_start and day in W.LV_DRAIN_DAYS:
         events.append({"t": t[0], "type": "log", "proc": "pmic", "sev": 3 if rest_v < 12.3 else 4,
                        "msg": f"12V battery resting voltage at wake {rest_v:.2f} V"})
         if rest_v < 12.0 and not state.lv_dtc_logged:

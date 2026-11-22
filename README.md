@@ -52,5 +52,18 @@ python -m twin.replay --day 55 --start 18:00 --minutes 5 # terminal 2: replay ye
 
 Scenarios and planted faults: `twin/fault_catalogue.yaml`. Exam questions: `eval/golden_questions.yaml`.
 
+## Phase 2: SENSE (listen-only collection, normalisation, events, black box)
+```
+python -m sense.ingest --backfill     # all recordings -> data/sense/ (events, logs, black-box case files) in ~45 s
+```
+Live (two terminals): `python -m sense.ingest --live`, then `python -m twin.replay --day 55 --start 18:03 --minutes 3`.
+
+| Piece | What it does |
+|---|---|
+| `sense/adapters/sources.py` | One listen-only adapter per source: CAN/CAN-FD (DBC), SOME/IP (header-validated), Android VHAL, QNX slog2, UDS DTCs |
+| `sense/mappings.yaml` | Every native name -> COVESA VSS path (192 paths seen); location coarsened to ~1 km |
+| `sense/engine.py` | 1 Hz normalised snapshot; event miner (trips, charges, warnings, DTCs, ADAS, data gaps, contextual anomalies, Drain3 log templates); black box (-60 s / +10 s case files) |
+| `safety/guards.py` | `ListenOnlyBus`: any CAN transmit raises and is counted (must stay 0) |
+
 ## Status
-Phase 1 (digital twin) complete. Tests: `python -m pytest -q`.
+Phase 2 (SENSE) complete. Tests: `python -m pytest -q` (9 tests, ~2 min).

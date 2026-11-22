@@ -4,4 +4,6 @@ python-can>=4.5
 cantools>=40
 msgpack>=1.0        # needed by python-can's udp_multicast bus (Windows/macOS CAN transport)
 pyyaml>=6.0
+drain3>=0.9.11       # log template mining (SENSE)
+psutil>=5.9         # memory measurement on Windows
 pytest>=8.0

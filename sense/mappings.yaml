@@ -1,0 +1,207 @@
+# SENSE mapping: every source's native names -> COVESA VSS paths.
+# This is vehicle configuration (like the DBC). VehicleGPT never imports the twin's code.
+
+can:
+  dbc: twin/nexus_ev.dbc        # the vehicle's CAN database
+  signals:
+    ABSActive: Vehicle.ADAS.ABS.IsEngaged
+    ACActive: Vehicle.Cabin.HVAC.IsAirConditioningActive
+    AccelLat: Vehicle.Acceleration.Lateral
+    AccelLong: Vehicle.Acceleration.Longitudinal
+    AccelPedal: Vehicle.Chassis.Accelerator.PedalPosition
+    BrakePedal: Vehicle.Chassis.Brake.PedalPosition
+    CabinTemp: Vehicle.Cabin.HVAC.AmbientAirTemperature
+    Cell01V: Vehicle.Private.TractionBattery.Cell1.Voltage
+    Cell02V: Vehicle.Private.TractionBattery.Cell2.Voltage
+    Cell03V: Vehicle.Private.TractionBattery.Cell3.Voltage
+    Cell04V: Vehicle.Private.TractionBattery.Cell4.Voltage
+    Cell05V: Vehicle.Private.TractionBattery.Cell5.Voltage
+    Cell06V: Vehicle.Private.TractionBattery.Cell6.Voltage
+    Cell07V: Vehicle.Private.TractionBattery.Cell7.Voltage
+    Cell08V: Vehicle.Private.TractionBattery.Cell8.Voltage
+    Cell09V: Vehicle.Private.TractionBattery.Cell9.Voltage
+    Cell10V: Vehicle.Private.TractionBattery.Cell10.Voltage
+    Cell11V: Vehicle.Private.TractionBattery.Cell11.Voltage
+    Cell12V: Vehicle.Private.TractionBattery.Cell12.Voltage
+    Cell13V: Vehicle.Private.TractionBattery.Cell13.Voltage
+    Cell14V: Vehicle.Private.TractionBattery.Cell14.Voltage
+    Cell15V: Vehicle.Private.TractionBattery.Cell15.Voltage
+    Cell16V: Vehicle.Private.TractionBattery.Cell16.Voltage
+    Cell17V: Vehicle.Private.TractionBattery.Cell17.Voltage
+    Cell18V: Vehicle.Private.TractionBattery.Cell18.Voltage
+    Cell19V: Vehicle.Private.TractionBattery.Cell19.Voltage
+    Cell20V: Vehicle.Private.TractionBattery.Cell20.Voltage
+    Cell21V: Vehicle.Private.TractionBattery.Cell21.Voltage
+    Cell22V: Vehicle.Private.TractionBattery.Cell22.Voltage
+    Cell23V: Vehicle.Private.TractionBattery.Cell23.Voltage
+    Cell24V: Vehicle.Private.TractionBattery.Cell24.Voltage
+    Cell25V: Vehicle.Private.TractionBattery.Cell25.Voltage
+    Cell26V: Vehicle.Private.TractionBattery.Cell26.Voltage
+    Cell27V: Vehicle.Private.TractionBattery.Cell27.Voltage
+    Cell28V: Vehicle.Private.TractionBattery.Cell28.Voltage
+    Cell29V: Vehicle.Private.TractionBattery.Cell29.Voltage
+    Cell30V: Vehicle.Private.TractionBattery.Cell30.Voltage
+    Cell31V: Vehicle.Private.TractionBattery.Cell31.Voltage
+    Cell32V: Vehicle.Private.TractionBattery.Cell32.Voltage
+    Cell33V: Vehicle.Private.TractionBattery.Cell33.Voltage
+    Cell34V: Vehicle.Private.TractionBattery.Cell34.Voltage
+    Cell35V: Vehicle.Private.TractionBattery.Cell35.Voltage
+    Cell36V: Vehicle.Private.TractionBattery.Cell36.Voltage
+    Cell37V: Vehicle.Private.TractionBattery.Cell37.Voltage
+    Cell38V: Vehicle.Private.TractionBattery.Cell38.Voltage
+    Cell39V: Vehicle.Private.TractionBattery.Cell39.Voltage
+    Cell40V: Vehicle.Private.TractionBattery.Cell40.Voltage
+    Cell41V: Vehicle.Private.TractionBattery.Cell41.Voltage
+    Cell42V: Vehicle.Private.TractionBattery.Cell42.Voltage
+    Cell43V: Vehicle.Private.TractionBattery.Cell43.Voltage
+    Cell44V: Vehicle.Private.TractionBattery.Cell44.Voltage
+    Cell45V: Vehicle.Private.TractionBattery.Cell45.Voltage
+    Cell46V: Vehicle.Private.TractionBattery.Cell46.Voltage
+    Cell47V: Vehicle.Private.TractionBattery.Cell47.Voltage
+    Cell48V: Vehicle.Private.TractionBattery.Cell48.Voltage
+    Cell49V: Vehicle.Private.TractionBattery.Cell49.Voltage
+    Cell50V: Vehicle.Private.TractionBattery.Cell50.Voltage
+    Cell51V: Vehicle.Private.TractionBattery.Cell51.Voltage
+    Cell52V: Vehicle.Private.TractionBattery.Cell52.Voltage
+    Cell53V: Vehicle.Private.TractionBattery.Cell53.Voltage
+    Cell54V: Vehicle.Private.TractionBattery.Cell54.Voltage
+    Cell55V: Vehicle.Private.TractionBattery.Cell55.Voltage
+    Cell56V: Vehicle.Private.TractionBattery.Cell56.Voltage
+    Cell57V: Vehicle.Private.TractionBattery.Cell57.Voltage
+    Cell58V: Vehicle.Private.TractionBattery.Cell58.Voltage
+    Cell59V: Vehicle.Private.TractionBattery.Cell59.Voltage
+    Cell60V: Vehicle.Private.TractionBattery.Cell60.Voltage
+    Cell61V: Vehicle.Private.TractionBattery.Cell61.Voltage
+    Cell62V: Vehicle.Private.TractionBattery.Cell62.Voltage
+    Cell63V: Vehicle.Private.TractionBattery.Cell63.Voltage
+    Cell64V: Vehicle.Private.TractionBattery.Cell64.Voltage
+    Cell65V: Vehicle.Private.TractionBattery.Cell65.Voltage
+    Cell66V: Vehicle.Private.TractionBattery.Cell66.Voltage
+    Cell67V: Vehicle.Private.TractionBattery.Cell67.Voltage
+    Cell68V: Vehicle.Private.TractionBattery.Cell68.Voltage
+    Cell69V: Vehicle.Private.TractionBattery.Cell69.Voltage
+    Cell70V: Vehicle.Private.TractionBattery.Cell70.Voltage
+    Cell71V: Vehicle.Private.TractionBattery.Cell71.Voltage
+    Cell72V: Vehicle.Private.TractionBattery.Cell72.Voltage
+    Cell73V: Vehicle.Private.TractionBattery.Cell73.Voltage
+    Cell74V: Vehicle.Private.TractionBattery.Cell74.Voltage
+    Cell75V: Vehicle.Private.TractionBattery.Cell75.Voltage
+    Cell76V: Vehicle.Private.TractionBattery.Cell76.Voltage
+    Cell77V: Vehicle.Private.TractionBattery.Cell77.Voltage
+    Cell78V: Vehicle.Private.TractionBattery.Cell78.Voltage
+    Cell79V: Vehicle.Private.TractionBattery.Cell79.Voltage
+    Cell80V: Vehicle.Private.TractionBattery.Cell80.Voltage
+    Cell81V: Vehicle.Private.TractionBattery.Cell81.Voltage
+    Cell82V: Vehicle.Private.TractionBattery.Cell82.Voltage
+    Cell83V: Vehicle.Private.TractionBattery.Cell83.Voltage
+    Cell84V: Vehicle.Private.TractionBattery.Cell84.Voltage
+    Cell85V: Vehicle.Private.TractionBattery.Cell85.Voltage
+    Cell86V: Vehicle.Private.TractionBattery.Cell86.Voltage
+    Cell87V: Vehicle.Private.TractionBattery.Cell87.Voltage
+    Cell88V: Vehicle.Private.TractionBattery.Cell88.Voltage
+    Cell89V: Vehicle.Private.TractionBattery.Cell89.Voltage
+    Cell90V: Vehicle.Private.TractionBattery.Cell90.Voltage
+    Cell91V: Vehicle.Private.TractionBattery.Cell91.Voltage
+    Cell92V: Vehicle.Private.TractionBattery.Cell92.Voltage
+    Cell93V: Vehicle.Private.TractionBattery.Cell93.Voltage
+    Cell94V: Vehicle.Private.TractionBattery.Cell94.Voltage
+    Cell95V: Vehicle.Private.TractionBattery.Cell95.Voltage
+    Cell96V: Vehicle.Private.TractionBattery.Cell96.Voltage
+    CellVmax: Vehicle.Private.TractionBattery.CellVoltage.Max
+    CellVmin: Vehicle.Private.TractionBattery.CellVoltage.Min
+    ChargeCurrentAC: Vehicle.Powertrain.TractionBattery.Charging.ChargeCurrent.AC
+    ChargeCurrentDC: Vehicle.Powertrain.TractionBattery.Charging.ChargeCurrent.DC
+    ChargeLimit: Vehicle.Private.TractionBattery.PowerLimit.Charge
+    CompressorPower: Vehicle.Private.HVAC.CompressorPower
+    DischargeLimit: Vehicle.Private.TractionBattery.PowerLimit.Discharge
+    EBAActive: Vehicle.ADAS.EBA.IsEngaged
+    ESCActive: Vehicle.ADAS.ESC.IsEngaged
+    ExteriorTemp: Vehicle.Exterior.AirTemperature
+    FanSpeed: Vehicle.Cabin.HVAC.Station.Row1.Driver.FanSpeed
+    Gear: Vehicle.Powertrain.Transmission.SelectedGear
+    HeaterPower: Vehicle.Private.HVAC.HeaterPower
+    IsCharging: Vehicle.Powertrain.TractionBattery.Charging.IsCharging
+    LVBatteryVoltage: Vehicle.LowVoltageBattery.CurrentVoltage
+    LowBeam: Vehicle.Body.Lights.Beam.Low.IsOn
+    Module01T: Vehicle.Private.TractionBattery.Module1.Temperature
+    Module02T: Vehicle.Private.TractionBattery.Module2.Temperature
+    Module03T: Vehicle.Private.TractionBattery.Module3.Temperature
+    Module04T: Vehicle.Private.TractionBattery.Module4.Temperature
+    Module05T: Vehicle.Private.TractionBattery.Module5.Temperature
+    Module06T: Vehicle.Private.TractionBattery.Module6.Temperature
+    Module07T: Vehicle.Private.TractionBattery.Module7.Temperature
+    Module08T: Vehicle.Private.TractionBattery.Module8.Temperature
+    Module09T: Vehicle.Private.TractionBattery.Module9.Temperature
+    Module10T: Vehicle.Private.TractionBattery.Module10.Temperature
+    Module11T: Vehicle.Private.TractionBattery.Module11.Temperature
+    Module12T: Vehicle.Private.TractionBattery.Module12.Temperature
+    Module13T: Vehicle.Private.TractionBattery.Module13.Temperature
+    Module14T: Vehicle.Private.TractionBattery.Module14.Temperature
+    Module15T: Vehicle.Private.TractionBattery.Module15.Temperature
+    Module16T: Vehicle.Private.TractionBattery.Module16.Temperature
+    Module17T: Vehicle.Private.TractionBattery.Module17.Temperature
+    Module18T: Vehicle.Private.TractionBattery.Module18.Temperature
+    Module19T: Vehicle.Private.TractionBattery.Module19.Temperature
+    Module20T: Vehicle.Private.TractionBattery.Module20.Temperature
+    Module21T: Vehicle.Private.TractionBattery.Module21.Temperature
+    Module22T: Vehicle.Private.TractionBattery.Module22.Temperature
+    Module23T: Vehicle.Private.TractionBattery.Module23.Temperature
+    Module24T: Vehicle.Private.TractionBattery.Module24.Temperature
+    Module25T: Vehicle.Private.TractionBattery.Module25.Temperature
+    Module26T: Vehicle.Private.TractionBattery.Module26.Temperature
+    Module27T: Vehicle.Private.TractionBattery.Module27.Temperature
+    Module28T: Vehicle.Private.TractionBattery.Module28.Temperature
+    Module29T: Vehicle.Private.TractionBattery.Module29.Temperature
+    Module30T: Vehicle.Private.TractionBattery.Module30.Temperature
+    Module31T: Vehicle.Private.TractionBattery.Module31.Temperature
+    Module32T: Vehicle.Private.TractionBattery.Module32.Temperature
+    MotorSpeed: Vehicle.Powertrain.ElectricMotor.Speed
+    MotorTemp: Vehicle.Powertrain.ElectricMotor.Temperature
+    MotorTorque: Vehicle.Private.ElectricMotor.Torque
+    Odometer: Vehicle.TraveledDistance
+    PackCurrent: Vehicle.Powertrain.TractionBattery.CurrentCurrent
+    PackPower: Vehicle.Powertrain.TractionBattery.CurrentPower
+    PackVoltage: Vehicle.Powertrain.TractionBattery.CurrentVoltage
+    PowerState: Vehicle.Private.Vehicle.PowerState
+    Range: Vehicle.Powertrain.TractionBattery.Range
+    RegenPower: Vehicle.Private.Powertrain.RegenPower
+    SetPoint: Vehicle.Cabin.HVAC.Station.Row1.Driver.Temperature
+    SoC: Vehicle.Powertrain.TractionBattery.StateOfCharge.Current
+    SoCDisplayed: Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed
+    SoH: Vehicle.Powertrain.TractionBattery.StateOfHealth
+    SteeringAngle: Vehicle.Chassis.SteeringWheel.Angle
+    TempAvg: Vehicle.Powertrain.TractionBattery.Temperature.Average
+    TempMax: Vehicle.Powertrain.TractionBattery.Temperature.Max
+    TempMin: Vehicle.Powertrain.TractionBattery.Temperature.Min
+    TyrePressFL: Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.Pressure
+    TyrePressFR: Vehicle.Chassis.Axle.Row1.Wheel.Right.Tire.Pressure
+    TyrePressRL: Vehicle.Chassis.Axle.Row2.Wheel.Left.Tire.Pressure
+    TyrePressRR: Vehicle.Chassis.Axle.Row2.Wheel.Right.Tire.Pressure
+    VehicleSpeed: Vehicle.Speed
+    WarningActive: Vehicle.Private.Cluster.WarningActive
+    WarningCode: Vehicle.Private.Cluster.WarningCode
+    WiperMode: Vehicle.Body.Windshield.Front.Wiping.Mode
+
+someip:                          # service_id -> event_id -> struct format + fields [vss_path, scale]
+  0x1100:                        # thermal-management service
+    0x8001: {format: ">hHHB", fields: [[Vehicle.Private.Thermal.CoolantTemperature.Battery, 0.1], [Vehicle.Private.Thermal.CoolantPump.Speed, 1], [Vehicle.Private.Thermal.CoolantPump.Current, 0.01], [Vehicle.Private.Thermal.ChillerActive, 1]]}
+  0x1200:                        # ADAS service
+    0x8001: {format: ">BBBBB", fields: [[Vehicle.ADAS.CruiseControl.IsActive, 1], [Vehicle.ADAS.LaneDepartureDetection.IsEnabled, 1], [Vehicle.ADAS.LaneDepartureDetection.IsWarning, 1], [Vehicle.Private.ADAS.LaneKeepAssist.IsActive, 1], [Vehicle.Private.ADAS.LaneMarkingConfidence, 1]]}
+    0x8002: {format: ">BHB", event: ADAS_EVENT}
+  0x1300:                        # camera service (metadata only - no images)
+    0x8001: {format: ">BBB", fields: [[Vehicle.Private.Camera.Front.Status, 1], [Vehicle.Private.Camera.Front.ObjectCount, 1], [Vehicle.Private.Camera.Front.Visibility, 1]]}
+adas_reasons: {1: LANE_MARKINGS_LOST, 2: CAMERA_UNAVAILABLE, 3: DRIVER_OVERRIDE, 4: ODD_EXIT}
+camera_status: {0: OK, 1: DEGRADED, 2: BLOCKED, 3: OFFLINE}
+
+vhal:                            # property id -> vss path, scale; CAN wins if both report the same path
+  "0x11600207": [Vehicle.Speed, 3.6]                       # PERF_VEHICLE_SPEED m/s -> km/h
+  "0x11600703": [Vehicle.Exterior.AirTemperature, 1]       # ENV_OUTSIDE_TEMPERATURE
+  "0x1520050A": [Vehicle.Cabin.HVAC.IsAirConditioningActive, 1]
+  "0x15600503": [Vehicle.Cabin.HVAC.Station.Row1.Driver.Temperature, 1]
+  "0x11400400": [Vehicle.Powertrain.Transmission.SelectedGear, 1]
+  "0x21600F01": [Vehicle.CurrentLocation.Latitude, 1]      # vendor; coarsened to 0.01 deg (~1 km) for privacy
+  "0x21600F02": [Vehicle.CurrentLocation.Longitude, 1]
+  "0x21400F03": [Vehicle.Private.Road.Type, 1]              # 0 city, 1 highway
+
+privacy:
+  coarsen_degrees: 0.01
