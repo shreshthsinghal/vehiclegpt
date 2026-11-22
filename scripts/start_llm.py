@@ -20,7 +20,7 @@ if not server:
     sys.exit(f"llama-server not found. Unzip the llama.cpp release into {ROOT / 'llama'} or set VGPT_LLAMA_SERVER.")
 if not model:
     sys.exit("No model in models/. Run: python scripts/get_model.py")
-cmd = [str(server), "-m", str(model), "-t", "2", "-c", "1024", "-b", "256", "-ub", "128", "-fa", "on",
+cmd = [str(server), "-m", str(model), "-t", "2", "-c", "1024", "-np", "1", "--cache-ram", "0", "-b", "256", "-ub", "128", "-fa", "on",
        "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "127.0.0.1", "--port", "8080"]
 print(" ".join(cmd))
 sys.exit(subprocess.call(cmd))

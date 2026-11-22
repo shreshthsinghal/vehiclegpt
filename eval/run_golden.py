@@ -122,6 +122,7 @@ def main(smart: bool = False, out: Path = ROOT / "eval" / "results" / "golden_re
         summary["slm_decode_tok_s_median"] = round(statistics.median([r["tok_s"] for r in slm_rows if r["tok_s"]]), 1)
         summary["slm_tokens_per_plan_median"] = statistics.median([r["predicted_n"] for r in slm_rows if r["predicted_n"]])
         summary["slm_prompt_tokens_after_cache_median"] = statistics.median([r["prompt_n"] for r in slm_rows if r["prompt_n"]])
+        summary["slm_startup_warmup_ms"] = round(vg.warmup_ms)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"summary": summary, "rows": rows, "slm_rows": slm_rows}, indent=2), encoding="utf-8")
     if slm_rows and not quiet:

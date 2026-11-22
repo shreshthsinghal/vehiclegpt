@@ -116,6 +116,15 @@ class SlmPlanner:
         self.timeout = timeout
         self.last: dict = {}
 
+    def warmup(self) -> float:
+        """Process the fixed instruction prefix once at start-up so the first real question is fast."""
+        t0 = time.perf_counter()
+        try:
+            self.raw("warm up")
+        except Exception:          # noqa: BLE001
+            pass
+        return (time.perf_counter() - t0) * 1000
+
     def raw(self, question: str, candidates: list | None = None) -> tuple[dict, dict]:
         schema = SCHEMA
         if candidates:                     # retrieval-augmented planning: only the router's top candidates are allowed

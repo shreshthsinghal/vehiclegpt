@@ -23,6 +23,7 @@ class VehicleGPT:
         self.ctx = Ctx(self.store)
         self.router = Router(store_path.parent / "learned_intents.jsonl" if learn else None)
         self.planner = planner
+        self.warmup_ms = planner.warmup() if planner is not None else 0.0
 
     def ask(self, question: str, force_smart: bool = False) -> Answer:
         t0 = time.perf_counter()

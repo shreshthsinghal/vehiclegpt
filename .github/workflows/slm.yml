@@ -43,7 +43,7 @@ jobs:
       - name: Start llama-server on 2 cores (loopback only)
         run: |
           M=$(ls models/*.gguf)
-          nohup taskset -c 0,1 llama.cpp/build/bin/llama-server -m $M -t 2 -c 1024 -b 256 -ub 128 -fa on \
+          nohup taskset -c 0,1 llama.cpp/build/bin/llama-server -m $M -t 2 -c 1024 -np 1 --cache-ram 0 -b 256 -ub 128 -fa on \
             --cache-type-k q8_0 --cache-type-v q8_0 --host 127.0.0.1 --port 8080 > server.log 2>&1 &
           for i in $(seq 1 60); do curl -sf http://127.0.0.1:8080/health && break; sleep 1; done
       - name: Golden exam with SMART path
