@@ -26,6 +26,7 @@ SYN = {
     r"\b(warning|alert|telltale|message|light)\b": " warning ",
     r"\b(before|led to|lead(ing)? up|leading to|caused?|triggered|root cause|sequence|timeline|preceded)\b": " before ",
     r"\b(city|town|urban|traffic)\b": " city ",
+    r"\b(cool\w*|chill\w*|radiator)\b": " coolant cooling ",
     r"\b(highway|motorway|expressway|freeway)\b": " highway ",
     r"\b(compare|comparison|versus|vs|difference|between)\b": " compare ",
     r"\b(dtcs?|fault codes?|error codes?|trouble codes?|diagnostic\w*|faults?)\b": " dtc ",

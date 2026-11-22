@@ -32,13 +32,15 @@ class VehicleGPT:
         path = "FAST"
         if (not route.fast or force_smart) and route.intent not in ("unsafe_command", "privacy"):
             if self.planner is not None:
-                plan = self.planner.plan(question, self.ctx)
+                plan = self.planner.plan(question, self.ctx, route.candidates)
                 path = "SMART"
                 if plan.get("intent") not in PLAYBOOKS:
                     plan = {"intent": route.intent}
                     path = "SMART-fallback"
             else:
                 path = "FAST-lowconf"
+                if route.score < 0.2:                      # unclear question, no model available: show related records
+                    return self._related(question, t0)
         t2 = time.perf_counter()
         self.ctx.windows = []
         try:
@@ -61,6 +63,23 @@ class VehicleGPT:
         ans.path, ans.plan = path, plan
         ans.timings_ms = {"route": (t1 - t0) * 1e3, "plan": (t2 - t1) * 1e3, "query": (t3 - t2) * 1e3,
                           "verify": (t4 - t3) * 1e3, "total": (t4 - t0) * 1e3}
+        return ans
+
+
+    def _related(self, question: str, t0: float) -> Answer:
+        from .dates import fmt_time
+        from .embed import embed
+        hits = self.store.search_meaning(embed(question), k=5)
+        ans = Answer(question, "related_records", path="MEANING-SEARCH", confidence="low")
+        ans.what = "I'm not sure what you're asking. These recorded events look related:"
+        ids = {rid for rid, _ in hits}
+        for e in self.store.events():
+            if e["id"] in ids:
+                ans.fact(f"t{e['id']}", fmt_time(e["ts"]))
+                ans.details.append(f"{fmt_time(e['ts'])} {e['type'].replace('_', ' ').lower()} {e['code'] or ''}".strip())
+        ans.evidence.append("meaning search (sqlite-vec) over all event descriptions")
+        ans = verify(ans)
+        ans.timings_ms = {"total": (time.perf_counter() - t0) * 1e3}
         return ans
 
 

@@ -34,6 +34,7 @@ class Route:
     margin: float
     fast: bool
     neighbours: list
+    candidates: list = None          # top intents, handed to the SLM planner as its only allowed choices
 
 
 class Router:
@@ -71,4 +72,5 @@ class Router:
         scores = sorted(((np.mean(v[:2]), k) for k, v in best.items()), reverse=True)
         (s1, top), (s2, _) = scores[0], (scores[1] if len(scores) > 1 else (0.0, None))
         nb = [(self.labels[i], self.examples[i][1], round(float(sims[i]), 3)) for i in np.argsort(-sims)[:3]]
-        return Route(top, float(s1), float(s1 - s2), bool(s1 >= THRESHOLD and s1 - s2 >= MARGIN), nb)
+        cands = [k for _, k in scores[:4]]
+        return Route(top, float(s1), float(s1 - s2), bool(s1 >= THRESHOLD and s1 - s2 >= MARGIN), nb, cands)

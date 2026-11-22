@@ -116,8 +116,13 @@ class SlmPlanner:
         self.timeout = timeout
         self.last: dict = {}
 
-    def raw(self, question: str) -> tuple[dict, dict]:
-        body = {"prompt": _chatml(question[:300]), "json_schema": SCHEMA, "n_predict": 64, "temperature": 0.0,
+    def raw(self, question: str, candidates: list | None = None) -> tuple[dict, dict]:
+        schema = SCHEMA
+        if candidates:                     # retrieval-augmented planning: only the router's top candidates are allowed
+            allowed = [c for c in candidates if c in INTENTS] + ["out_of_scope"]
+            schema = json.loads(json.dumps(SCHEMA))
+            schema["properties"]["intent"] = {"enum": list(dict.fromkeys(allowed))}
+        body = {"prompt": _chatml(question[:300]), "json_schema": schema, "n_predict": 64, "temperature": 0.0,
                 "cache_prompt": True, "stop": ["<|im_end|>"]}
         req = urllib.request.Request(self.url + "/completion", data=json.dumps(body).encode(),
                                      headers={"Content-Type": "application/json"})
@@ -131,9 +136,9 @@ class SlmPlanner:
                                             "prompt_ms": timings.get("prompt_ms"), "predicted_ms": timings.get("predicted_ms"),
                                             "tok_per_s": timings.get("predicted_per_second")}
 
-    def plan(self, question: str, ctx) -> dict:
+    def plan(self, question: str, ctx, candidates: list | None = None) -> dict:
         try:
-            raw, stats = self.raw(question)
+            raw, stats = self.raw(question, candidates)
         except Exception as exc:                                    # model down -> caller falls back to router
             self.last = {"error": f"{type(exc).__name__}: {exc}"}
             return {"intent": None}

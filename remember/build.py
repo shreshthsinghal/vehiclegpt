@@ -26,6 +26,8 @@ def build(twin: Path = TWIN, path: Path = STORE, days: int | None = None, encryp
     sink = StoreSink(store)
     rep = backfill(twin=twin, days=days, extra_sinks=[sink], quiet=True, case_writer=sink.write_case)
     ret = store.enforce_retention(rep["last_ts"])
+    from reason.embed import DIM, embed
+    indexed = store.index_meaning(embed, DIM)
     store.db.execute("VACUUM")
     st = store.stats()
     recorded_days = days or 56
@@ -36,7 +38,7 @@ def build(twin: Path = TWIN, path: Path = STORE, days: int | None = None, encryp
     per_day_cold = st["cold"]["payload_mb"] / max(st["cold"]["days"], 1)
     db_mb = st["db_file_mb"] + st["pinned_cases"]["kb_total"] / 1024
     report = {
-        "store": st, "total_on_disk_mb": round(db_mb, 1), "retention": ret, "flushes": sink.flushes,
+        "store": st, "total_on_disk_mb": round(db_mb, 1), "meaning_index_events": indexed, "retention": ret, "flushes": sink.flushes,
         "usage_h_per_day": round(drive_h_per_day, 2),
         "per_day_mb": {"warm_1hz": round(per_day_warm, 3), "cold_1min": round(per_day_cold, 3)},
         "projection_8_weeks_mb": {f"at {drive_h_per_day:.1f} h/day (measured)": round(db_mb, 1),

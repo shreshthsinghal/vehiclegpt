@@ -5,9 +5,9 @@
     "brief_correct_vs_answer_key": "54/54 graded",
     "brief_verified": "55/55",
     "brief_latency_ms": {
-      "p50": 2.3,
-      "p95": 36.0,
-      "max": 68.6
+      "p50": 1.6,
+      "p95": 21.8,
+      "max": 64.5
     },
     "long_tail_intent_accuracy": "20/20",
     "long_tail_verified": "20/20",
@@ -27,7 +27,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 33.1,
+      "ms": 64.5,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -38,7 +38,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 25.8,
+      "ms": 21.8,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -49,7 +49,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 25.7,
+      "ms": 20.6,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -60,7 +60,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 35.6,
+      "ms": 19.3,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -71,7 +71,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 43.0,
+      "ms": 21.4,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -82,7 +82,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 34.7,
+      "ms": 19.8,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -93,7 +93,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 39.1,
+      "ms": 18.8,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -104,7 +104,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 29.1,
+      "ms": 18.1,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -115,7 +115,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 31.6,
+      "ms": 18.2,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -126,7 +126,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 68.6,
+      "ms": 49.1,
       "note": "different time window asked (e.g. 'this month'): not graded against the 2-week answer key"
     },
     {
@@ -137,7 +137,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 36.0,
+      "ms": 23.6,
       "note": "range -12.8% (truth -12.4), heat 60.0% (truth 64)"
     },
     {
@@ -148,7 +148,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 4.3,
+      "ms": 3.2,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -159,7 +159,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.5,
+      "ms": 2.6,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -170,7 +170,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 4.3,
+      "ms": 2.1,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -181,7 +181,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 4.3,
+      "ms": 2.0,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -192,7 +192,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 4.0,
+      "ms": 2.0,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -203,7 +203,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 3.9,
+      "ms": 1.9,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -214,7 +214,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 3.7,
+      "ms": 2.0,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -225,7 +225,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 4.0,
+      "ms": 2.0,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -236,7 +236,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 4.0,
+      "ms": 2.1,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -247,7 +247,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 3.8,
+      "ms": 1.9,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -258,7 +258,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 3.8,
+      "ms": 1.9,
       "note": "worst 30 Oct in answer: True"
     },
     {
@@ -269,7 +269,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.1,
+      "ms": 3.9,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -280,7 +280,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.9,
+      "ms": 1.6,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -291,7 +291,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.0,
+      "ms": 1.5,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -302,7 +302,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.2,
+      "ms": 1.3,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -313,7 +313,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.8,
+      "ms": 1.2,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -324,7 +324,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.9,
+      "ms": 1.4,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -335,7 +335,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.4,
+      "ms": 1.2,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -346,7 +346,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.8,
+      "ms": 1.2,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -357,7 +357,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.7,
+      "ms": 1.2,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -368,7 +368,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.9,
+      "ms": 1.3,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -379,7 +379,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.6,
+      "ms": 1.2,
       "note": "5.0 events (truth 5)"
     },
     {
@@ -390,7 +390,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.3,
+      "ms": 3.7,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -401,7 +401,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.4,
+      "ms": 2.0,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -412,7 +412,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.3,
+      "ms": 1.6,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -423,7 +423,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.2,
+      "ms": 1.5,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -434,7 +434,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.2,
+      "ms": 1.6,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -445,7 +445,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.4,
+      "ms": 1.6,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -456,7 +456,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.3,
+      "ms": 1.5,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -467,7 +467,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.3,
+      "ms": 1.5,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -478,7 +478,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.1,
+      "ms": 1.5,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -489,7 +489,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.2,
+      "ms": 1.5,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -500,7 +500,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.2,
+      "ms": 1.6,
       "note": "root cause P1A20: True, warning time ok: True"
     },
     {
@@ -511,7 +511,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.0,
+      "ms": 1.3,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -522,7 +522,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 2.0,
+      "ms": 0.9,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -533,7 +533,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.6,
+      "ms": 1.0,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -544,7 +544,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.7,
+      "ms": 1.0,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -555,7 +555,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.7,
+      "ms": 0.9,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -566,7 +566,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.7,
+      "ms": 0.9,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -577,7 +577,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.6,
+      "ms": 0.9,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -588,7 +588,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.4,
+      "ms": 0.9,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -599,7 +599,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.6,
+      "ms": 0.9,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -610,7 +610,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.6,
+      "ms": 0.8,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -621,7 +621,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 1.7,
+      "ms": 0.9,
       "note": "city 18.2 (truth 18.17), highway 19.8 (truth 19.84)"
     },
     {
@@ -643,7 +643,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 0.7,
+      "ms": 0.4,
       "note": "health_summary (expected health_summary): No faults, warnings or anomalies in the first 2 weeks (05 Oct - 19 Oct): the vehicle was h"
     },
     {
@@ -654,7 +654,7 @@
       "path": "FAST-lowconf",
       "correct": null,
       "verified": true,
-      "ms": 2.6,
+      "ms": 2.1,
       "note": "signal_trend (expected signal_trend): The air-conditioning used 17.3 kWh in the last 7 days (23 Nov - 29 Nov)."
     },
     {
@@ -665,7 +665,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 0.7,
+      "ms": 0.4,
       "note": "data_quality (expected data_quality): 1 data gap in 19 Oct."
     },
     {
@@ -676,7 +676,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 0.9,
+      "ms": 0.5,
       "note": "charging_history (expected charging_history): 14 charging sessions in November so far: 2 DC fast charges and 12 home AC charges, 249.6 k"
     },
     {
@@ -687,7 +687,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 1.4,
+      "ms": 0.9,
       "note": "trip_stats (expected trip_stats): Your longest trip in the full 8-week history: 28 Nov 17:45: 90.2 km, 17.1 kWh/100 km, aver"
     },
     {
@@ -698,7 +698,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 33.5,
+      "ms": 22.7,
       "note": "trip_stats (expected trip_stats): Harsh braking (deceleration stronger than 2.5 m/s\u00b2) happened in 50.9% of driving minutes i"
     },
     {
@@ -709,7 +709,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 1.0,
+      "ms": 0.7,
       "note": "dtc_lookup (expected dtc_lookup): 5 fault codes logged in the full 8-week history; 4 still active."
     },
     {
@@ -720,7 +720,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 1.5,
+      "ms": 0.9,
       "note": "segment_compare (expected segment_compare): Weekdays: 18.4 kWh/100 km (97 trips). Weekends: 19.5 kWh/100 km (23 trips)."
     },
     {
@@ -731,7 +731,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 11.7,
+      "ms": 8.4,
       "note": "signal_trend (expected signal_trend): Battery state of health in the last 30 days: average 99.0 %, highest 99.0 % on 31 Oct 10:3"
     },
     {
@@ -742,7 +742,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 12.6,
+      "ms": 8.8,
       "note": "signal_trend (expected signal_trend): Battery temperature (max cell) in November so far (01 Nov - 29 Nov): average 31.4 \u00b0C, high"
     },
     {
@@ -753,7 +753,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 0.8,
+      "ms": 0.5,
       "note": "dtc_lookup (expected dtc_lookup): 1 fault code logged in the full 8-week history; 1 still active."
     },
     {
@@ -764,7 +764,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 1.4,
+      "ms": 0.9,
       "note": "trip_stats (expected trip_stats): On your last highway trip (28 Nov 17:45) tyre pressures were normal: front-left 243.7 kPa,"
     },
     {
@@ -775,7 +775,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 50.1,
+      "ms": 33.4,
       "note": "signal_trend (expected signal_trend): Regenerative braking recovered 7.83 kWh per 100 km in the city vs 0.43 kWh per 100 km on t"
     },
     {
@@ -786,7 +786,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 0.7,
+      "ms": 0.5,
       "note": "dtc_lookup (expected dtc_lookup): 1 fault code logged in the full 8-week history; 0 still active."
     },
     {
@@ -797,7 +797,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 1.2,
+      "ms": 0.7,
       "note": "trip_stats (expected trip_stats): Average city/commute speed: 22.3 km/h in 23 Nov - 29 Nov vs 21.0 km/h in 16 Nov - 22 Nov."
     },
     {
@@ -808,7 +808,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 0.8,
+      "ms": 0.5,
       "note": "charging_history (expected charging_history): 25 charging sessions in the full 8-week history: 2 DC fast charges and 23 home AC charges,"
     },
     {
@@ -819,7 +819,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 1.1,
+      "ms": 0.7,
       "note": "health_summary (expected health_summary): In the full 8-week history: 5 fault codes, 6 dashboard warnings, 19 anomaly detections, 1 "
     },
     {
@@ -830,7 +830,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 2.2,
+      "ms": 1.7,
       "note": "before_event (expected before_event): The 'camera unavailable' warning at 18:42:00 on Sat 28 Nov appeared suddenly, together wit"
     },
     {
@@ -841,7 +841,7 @@
       "path": "FAST",
       "correct": null,
       "verified": true,
-      "ms": 1.5,
+      "ms": 1.0,
       "note": "trip_stats (expected trip_stats): Least efficient trip in the full 8-week history: 19 Nov 14:34: 5.3 km, 25.7 kWh/100 km, av"
     },
     {
@@ -852,7 +852,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 0.1,
+      "ms": 0.0,
       "note": "unsafe_command"
     },
     {
@@ -896,7 +896,7 @@
       "path": "FAST",
       "correct": true,
       "verified": true,
-      "ms": 0.5,
+      "ms": 0.3,
       "note": "out_of_scope"
     },
     {

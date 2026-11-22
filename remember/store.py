@@ -27,6 +27,15 @@ from sense.config import ROOT, dbc, mapping
 
 from .codec import Cipher, decode, decode_rollup, encode, encode_rollup
 
+# Plain-language descriptions added to the search text of events (warnings, anomaly kinds, ADAS reasons).
+EVENT_WORDS = {
+    "BATTERY_TEMP_HIGH": "battery temperature high overheating hot thermal", "REDUCED_POWER": "reduced power limited derated",
+    "CHECK_TYRE_PRESSURE": "tyre tire pressure low flat puncture", "LOW_12V_BATTERY": "12 volt battery low weak",
+    "CAMERA_UNAVAILABLE": "front camera unavailable not working", "BATTERY_TEMP_ABOVE_CONTEXT": "battery hotter than normal overheating",
+    "COOLANT_PUMP_LOW": "coolant pump slow cooling weak", "TYRE_PRESSURE_LOW": "tyre tire pressure low flat puncture",
+    "LV_LOW_AT_WAKE": "12 volt battery weak at start", "LANE_MARKINGS_LOST": "lane markings not visible rain",
+    "DRIVER_OVERRIDE": "driver steered", "DATA_GAP": "missing data recording gap", "TRIP": "drive journey",
+    "CHARGE": "charging session"}
 BLOCK_S = 600
 WARM_DAYS = 14
 COLD_DAYS = 400
@@ -144,6 +153,7 @@ class Store:
                          json.dumps(attrs, default=float)))
         desc = self.db.execute("SELECT description FROM dtc_dict WHERE code=?", (code,)).fetchone() if code else None
         words = [e["type"].replace("_", " "), str(code or "").replace("_", " "), desc[0] if desc else "",
+                 EVENT_WORDS.get(str(code), ""), EVENT_WORDS.get(e["type"], ""),
                  str(e.get("wheel", "")), str(e.get("charger", "")).replace("_", " ")]
         if e["type"] == "LOG_ALERT":
             words.append(str(e.get("template", "")))
@@ -252,6 +262,32 @@ class Store:
         row = self.db.execute("SELECT file FROM cases WHERE id=?", (case_id,)).fetchone()
         blob = (self.cases_dir / row[0]).read_bytes()
         return json.loads(gzip.decompress(self.cipher.open(blob, case_id.encode())))
+
+    # ------------------------------------------------------------------ meaning search (sqlite-vec)
+    def _vec(self):
+        import sqlite_vec
+        self.db.enable_load_extension(True)
+        sqlite_vec.load(self.db)
+        self.db.enable_load_extension(False)
+
+    def index_meaning(self, embed_fn, dim: int) -> int:
+        """Embed every event's searchable text into a vec0 table (run after ingest)."""
+        self._vec()
+        self.db.execute("DROP TABLE IF EXISTS events_vec")
+        self.db.execute(f"CREATE VIRTUAL TABLE events_vec USING vec0(embedding float[{dim}])")
+        rows = self.db.execute("SELECT rowid, text FROM events_fts").fetchall()
+        import struct
+        for rid, text in rows:
+            v = embed_fn(text)
+            self.db.execute("INSERT INTO events_vec(rowid, embedding) VALUES (?, ?)", (rid, struct.pack(f"{dim}f", *v)))
+        self.db.commit()
+        return len(rows)
+
+    def search_meaning(self, vec, k: int = 8) -> list[tuple[int, float]]:
+        import struct
+        self._vec()
+        return self.db.execute("SELECT rowid, distance FROM events_vec WHERE embedding MATCH ? ORDER BY distance LIMIT ?",
+                               (struct.pack(f"{len(vec)}f", *vec), k)).fetchall()
 
     def stats(self) -> dict:
         q = lambda s: self.db.execute(s).fetchone()
