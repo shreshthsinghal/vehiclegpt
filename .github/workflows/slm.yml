@@ -50,7 +50,9 @@ jobs:
         run: |
           python -m eval.run_golden --smart | tail -40
           ps -o rss=,cmd= -C llama-server | awk '{printf "llama-server RSS %.0f MB\n", $1/1024}'
-          grep -E "llama_kv_cache|compute buffer|model buffer|n_ctx" server.log | head -12
+          P=$(pgrep -f llama-server | head -1); grep -E "VmRSS|RssAnon|RssFile|VmHWM" /proc/$P/status
+          grep -iE "MiB|n_ctx|n_parallel|n_slots|slot" server.log | head -30
+          llama.cpp/build/bin/llama-server --help 2>&1 | grep -iE "cache-ram|parallel|kv-unified|no-mmap|mlock" | head -12
       - uses: actions/upload-artifact@v4
         if: always()
         with:
