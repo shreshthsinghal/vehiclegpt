@@ -25,7 +25,7 @@ simulation:
 dtc_dictionary:   # simulated codes used by the twin
   P1A20: "Battery coolant pump performance low (simulated)"
   P1A21: "Battery temperature above threshold - power derated (simulated)"
-  C1T10: "Tyre pressure low - rear left (simulated)"
+  C1A10: "Tyre pressure low - rear left (simulated)"
   U1C01: "Lost communication with front camera module (simulated)"
   B1C02: "Front camera view obstructed (simulated)"
   P1B05: "12 V battery voltage low (simulated)"
@@ -35,23 +35,23 @@ scenarios:
     name: "Range drop over the last two weeks"
     tests: [Q1]
     window: "days 43-56 vs days 29-42"
-    causes:                       # truth label: contribution to the extra energy per km
-      - {cause: "AC load in hot afternoons (ambient 33-36 C)", share_pct: 60, signals: [Vehicle.Private.HVAC.CompressorPower, Vehicle.Exterior.AirTemperature]}
-      - {cause: "More stop-go city traffic (festival season)", share_pct: 30, signals: [Vehicle.Private.Trip.StopGoRatio]}
-      - {cause: "Unexplained / normal variation",             share_pct: 10}
+    causes:                       # truth = counterfactual re-simulation, see data/twin/truth/truth.json
+      - {cause: "AC load in late-season heat (daily mean 33.5 C vs 29.5 C)", explained_share_pct: 64, signals: [Vehicle.Private.HVAC.CompressorPower, Vehicle.Exterior.AirTemperature]}
+      - {cause: "More stop-go weekday traffic (wedding/festive season)", explained_share_pct: 36, signals: [Vehicle.Private.Trip.StopGoRatio]}
+      - {cause: "Normal trip-to-trip variation", note: "small, slightly negative in this run"}
     distractors:
       - "Tyres are NORMAL in this window (S02 is fixed by day 40) - the answer must say tyres are fine"
       - "Battery state of health unchanged (99%)"
-    expected_effect: "displayed range ~9% lower at the same state of charge"
+    expected_effect: "consumption +7.9%, displayed range ~12% lower at the same state of charge (generated run, seed 2026)"
 
   - id: S02
     name: "Slow puncture - efficiency drop with a clear start date"
     tests: [Q2]
     timeline:
       - {day: 20, event: "rear-left tyre starts losing pressure 240 -> 175 kPa over 6 days"}
-      - {day: 26, event: "DTC C1T10 + cluster warning 'Check tyre pressure'"}
+      - {day: 26, event: "DTC C1A10 + cluster warning 'Check tyre pressure' (RL < 180 kPa)"}
       - {day: 27, event: "tyre repaired, pressure back to 240 kPa"}
-    truth: "largest efficiency drop starts on day 21-22 (change point), worst on day 26 (+7% kWh/100 km)"
+    truth: "tyre energy penalty starts day 21 (25 Oct, +0.8%), grows daily, worst day 26 (30 Oct, +8.2%), zero after repair on day 27"
     distractors: ["a long highway trip on day 24 also raises kWh/100 km - should be normalised by speed"]
 
   - id: S03
@@ -89,7 +89,7 @@ scenarios:
   - id: S06
     name: "City vs highway energy comparison"
     tests: [Q5]
-    truth: "city ~14-16 kWh/100 km, highway ~18-20 kWh/100 km (higher aero drag at 90-110 km/h; regen helps in city)"
+    truth: "city ~18.2 kWh/100 km, highway ~19.8 kWh/100 km over 8 weeks (aero drag at 100-115 km/h vs stop-go + AC in city; in the hot, congested last 2 weeks the gap narrows)"
     notes: "computed over all 8 weeks; AC load reported separately"
 
   - id: S07
@@ -101,7 +101,7 @@ scenarios:
   - id: S08
     name: "Data gap - CAN logging dropout (robustness)"
     day: 15
-    events: ["no CAN data for 40 minutes during a trip (simulated logger fault)"]
+    events: ["no CAN data for 20 minutes during the evening commute (simulated logger buffer overrun)"]
     truth: "answers covering day 15 must say data is incomplete, not invent values"
 
   - id: S09

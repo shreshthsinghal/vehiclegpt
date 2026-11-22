@@ -1,0 +1,275 @@
+VERSION "1.0"
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: 
+
+
+BO_ 160 VCU_Motion: 8 VCU
+ SG_ PowerState : 52|4@1+ (1.0,0.0) [0|0] "" Vector__XXX
+ SG_ Gear : 48|4@1+ (1.0,0.0) [0|0] "" Vector__XXX
+ SG_ BrakePedal : 40|8@1+ (0.4,0.0) [0|0] "%" Vector__XXX
+ SG_ AccelPedal : 32|8@1+ (0.4,0.0) [0|0] "%" Vector__XXX
+ SG_ AccelLong : 16|16@1- (0.001,0.0) [0|0] "m/s^2" Vector__XXX
+ SG_ VehicleSpeed : 0|16@1+ (0.01,0.0) [0|250] "km/h" Vector__XXX
+
+BO_ 161 VCU_Chassis: 8 VCU
+ SG_ Odometer : 32|32@1+ (0.1,0.0) [0|0] "km" Vector__XXX
+ SG_ AccelLat : 16|16@1- (0.001,0.0) [0|0] "m/s^2" Vector__XXX
+ SG_ SteeringAngle : 0|16@1- (0.1,0.0) [0|0] "deg" Vector__XXX
+
+BO_ 272 MCU_Status: 8 MCU
+ SG_ RegenPower : 40|16@1+ (0.01,0.0) [0|0] "kW" Vector__XXX
+ SG_ MotorTorque : 24|16@1- (0.5,0.0) [0|0] "Nm" Vector__XXX
+ SG_ MotorTemp : 16|8@1+ (1,-40) [0|0] "degC" Vector__XXX
+ SG_ MotorSpeed : 0|16@1- (1,0) [0|0] "rpm" Vector__XXX
+
+BO_ 512 BMS_Pack: 8 BMS
+ SG_ SoC : 48|10@1+ (0.1,0.0) [0|0] "%" Vector__XXX
+ SG_ PackPower : 32|16@1- (10,0) [0|0] "W" Vector__XXX
+ SG_ PackCurrent : 16|16@1- (0.1,0.0) [0|0] "A" Vector__XXX
+ SG_ PackVoltage : 0|16@1+ (0.1,0.0) [0|0] "V" Vector__XXX
+
+BO_ 513 BMS_Thermal: 8 BMS
+ SG_ ChargeLimit : 48|8@1+ (1,0) [0|0] "kW" Vector__XXX
+ SG_ DischargeLimit : 40|8@1+ (1,0) [0|0] "kW" Vector__XXX
+ SG_ SoCDisplayed : 32|8@1+ (0.5,0.0) [0|0] "%" Vector__XXX
+ SG_ SoH : 24|8@1+ (0.5,0.0) [0|0] "%" Vector__XXX
+ SG_ TempMin : 16|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ TempMax : 8|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ TempAvg : 0|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+
+BO_ 514 BMS_Charge: 8 BMS
+ SG_ ChargeCurrentAC : 32|16@1+ (0.1,0.0) [0|0] "A" Vector__XXX
+ SG_ ChargeCurrentDC : 17|15@1+ (0.1,0.0) [0|0] "A" Vector__XXX
+ SG_ IsCharging : 16|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Range : 0|16@1+ (0.1,0.0) [0|0] "km" Vector__XXX
+
+BO_ 515 BMS_CellStats: 8 BMS
+ SG_ CellVmax : 16|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ CellVmin : 0|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+
+BO_ 768 HVAC_Status: 8 HVAC
+ SG_ FanSpeed : 56|8@1+ (1,0) [0|0] "%" Vector__XXX
+ SG_ SetPoint : 48|8@1+ (0.5,0.0) [0|0] "degC" Vector__XXX
+ SG_ CabinTemp : 40|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ ACActive : 32|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ HeaterPower : 16|16@1+ (0.001,0.0) [0|0] "kW" Vector__XXX
+ SG_ CompressorPower : 0|16@1+ (0.001,0.0) [0|0] "kW" Vector__XXX
+
+BO_ 784 BCM_Environment: 8 BCM
+ SG_ LVBatteryVoltage : 16|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ LowBeam : 10|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ WiperMode : 8|2@1+ (1.0,0.0) [0|0] "" Vector__XXX
+ SG_ ExteriorTemp : 0|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+
+BO_ 800 TPMS_Pressures: 8 TPMS
+ SG_ TyrePressRR : 48|16@1+ (0.1,0.0) [0|0] "kPa" Vector__XXX
+ SG_ TyrePressRL : 32|16@1+ (0.1,0.0) [0|0] "kPa" Vector__XXX
+ SG_ TyrePressFR : 16|16@1+ (0.1,0.0) [0|0] "kPa" Vector__XXX
+ SG_ TyrePressFL : 0|16@1+ (0.1,0.0) [0|0] "kPa" Vector__XXX
+
+BO_ 816 ESC_Status: 8 ESC
+ SG_ EBAActive : 2|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ESCActive : 1|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ABSActive : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 1008 Cluster_Warning: 8 IPC
+ SG_ WarningActive : 8|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ WarningCode : 0|8@1+ (1.0,0.0) [0|0] "" Vector__XXX
+
+BO_ 672 BMS_Cells_0: 32 BMS
+ SG_ Cell16V : 240|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell15V : 224|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell14V : 208|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell13V : 192|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell12V : 176|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell11V : 160|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell10V : 144|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell09V : 128|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell08V : 112|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell07V : 96|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell06V : 80|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell05V : 64|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell04V : 48|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell03V : 32|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell02V : 16|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell01V : 0|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+
+BO_ 673 BMS_Cells_1: 32 BMS
+ SG_ Cell32V : 240|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell31V : 224|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell30V : 208|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell29V : 192|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell28V : 176|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell27V : 160|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell26V : 144|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell25V : 128|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell24V : 112|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell23V : 96|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell22V : 80|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell21V : 64|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell20V : 48|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell19V : 32|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell18V : 16|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell17V : 0|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+
+BO_ 674 BMS_Cells_2: 32 BMS
+ SG_ Cell48V : 240|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell47V : 224|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell46V : 208|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell45V : 192|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell44V : 176|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell43V : 160|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell42V : 144|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell41V : 128|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell40V : 112|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell39V : 96|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell38V : 80|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell37V : 64|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell36V : 48|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell35V : 32|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell34V : 16|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell33V : 0|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+
+BO_ 675 BMS_Cells_3: 32 BMS
+ SG_ Cell64V : 240|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell63V : 224|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell62V : 208|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell61V : 192|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell60V : 176|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell59V : 160|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell58V : 144|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell57V : 128|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell56V : 112|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell55V : 96|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell54V : 80|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell53V : 64|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell52V : 48|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell51V : 32|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell50V : 16|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell49V : 0|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+
+BO_ 676 BMS_Cells_4: 32 BMS
+ SG_ Cell80V : 240|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell79V : 224|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell78V : 208|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell77V : 192|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell76V : 176|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell75V : 160|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell74V : 144|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell73V : 128|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell72V : 112|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell71V : 96|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell70V : 80|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell69V : 64|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell68V : 48|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell67V : 32|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell66V : 16|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell65V : 0|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+
+BO_ 677 BMS_Cells_5: 32 BMS
+ SG_ Cell96V : 240|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell95V : 224|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell94V : 208|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell93V : 192|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell92V : 176|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell91V : 160|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell90V : 144|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell89V : 128|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell88V : 112|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell87V : 96|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell86V : 80|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell85V : 64|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell84V : 48|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell83V : 32|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell82V : 16|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+ SG_ Cell81V : 0|16@1+ (0.001,0.0) [0|0] "V" Vector__XXX
+
+BO_ 688 BMS_ModuleTemps: 32 BMS
+ SG_ Module32T : 248|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module31T : 240|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module30T : 232|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module29T : 224|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module28T : 216|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module27T : 208|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module26T : 200|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module25T : 192|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module24T : 184|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module23T : 176|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module22T : 168|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module21T : 160|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module20T : 152|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module19T : 144|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module18T : 136|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module17T : 128|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module16T : 120|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module15T : 112|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module14T : 104|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module13T : 96|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module12T : 88|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module11T : 80|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module10T : 72|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module09T : 64|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module08T : 56|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module07T : 48|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module06T : 40|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module05T : 32|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module04T : 24|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module03T : 16|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module02T : 8|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+ SG_ Module01T : 0|8@1+ (0.5,-40) [0|0] "degC" Vector__XXX
+
+
+
+
+
+BA_DEF_ BO_  "VFrameFormat" ENUM  "StandardCAN","ExtendedCAN","reserved","J1939PG","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","StandardCAN_FD","ExtendedCAN_FD";
+BA_DEF_ BO_  "CANFD_BRS" ENUM  "0","1";
+BA_DEF_DEF_  "VFrameFormat" "StandardCAN";
+BA_DEF_DEF_  "CANFD_BRS" "1";
+BA_ "VFrameFormat" BO_ 672 14;
+BA_ "VFrameFormat" BO_ 673 14;
+BA_ "VFrameFormat" BO_ 674 14;
+BA_ "VFrameFormat" BO_ 675 14;
+BA_ "VFrameFormat" BO_ 676 14;
+BA_ "VFrameFormat" BO_ 677 14;
+BA_ "VFrameFormat" BO_ 688 14;
+VAL_ 160 PowerState 0 "OFF" 1 "ACC" 2 "ON" 3 "CHARGING" ;
+VAL_ 160 Gear 0 "P" 1 "R" 2 "N" 3 "D" ;
+VAL_ 784 WiperMode 0 "OFF" 1 "INTERVAL" 2 "LOW" 3 "HIGH" ;
+VAL_ 1008 WarningCode 0 "NONE" 1 "BATTERY_TEMP_HIGH" 2 "REDUCED_POWER" 3 "CHECK_TYRE_PRESSURE" 4 "LOW_12V_BATTERY" 5 "CAMERA_UNAVAILABLE" ;
+
+
+

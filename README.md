@@ -30,5 +30,27 @@ cd vehiclegpt
 python scripts/check_setup.py
 ```
 
+## Phase 1: digital twin (simulated vehicle data)
+```
+pip install -r requirements.txt
+python -m twin.generate          # 56 days of data in ~1 minute -> data/twin/
+python -m twin.inspect_data      # see one decoded sample from every source
+```
+Live demo (two terminals):
+```
+python -m twin.monitor                                   # terminal 1: receive-only dashboard
+python -m twin.replay --day 55 --start 18:00 --minutes 5 # terminal 2: replay yesterday's rainy drive
+```
+| Output | Format |
+|---|---|
+| `data/twin/can/dayNN.blf` | CAN + CAN-FD frames (Vector BLF), decoded with `twin/nexus_ev.dbc` (19 messages, 177 signals) |
+| `data/twin/someip/` | SOME/IP notifications (thermal, ADAS, camera services) with real 16-byte headers |
+| `data/twin/vhal/` | Android Automotive VHAL property events |
+| `data/twin/qnx/` | QNX slog2-style system log |
+| `data/twin/uds/` | UDS diagnostic trouble codes (service 0x19/0x59) |
+| `data/twin/truth/` | Answer key for grading - never read by VehicleGPT |
+
+Scenarios and planted faults: `twin/fault_catalogue.yaml`. Exam questions: `eval/golden_questions.yaml`.
+
 ## Status
-Phase 0 (setup). See the project logbook for the plan.
+Phase 1 (digital twin) complete. Tests: `python -m pytest -q`.

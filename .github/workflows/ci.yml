@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]   # x86-64 and native ARM64 (free on public repos)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Unit + full answer-key tests
+        run: python -m pytest -q
+      - name: Machine info
+        run: |
+          uname -m; nproc; free -h
+          python -c "import platform; print(platform.machine(), platform.python_version())"
+
+  vcan:
+    name: live replay over SocketCAN vcan0
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Create vcan0
+        id: vcan
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq linux-modules-extra-$(uname -r) can-utils
+          sudo modprobe vcan
+          sudo ip link add dev vcan0 type vcan
+          sudo ip link set up vcan0
+      - name: Generate 7 days and replay onto vcan0
+        if: steps.vcan.outcome == 'success'
+        run: |
+          python -m twin.generate --days 7
+          (timeout 40 candump -n 200 vcan0 > candump.txt &)
+          sleep 1
+          python -m twin.replay --day 6 --start 10:35 --minutes 1 --speed 10 --interface socketcan --channel vcan0
+          sleep 2
+          head -5 candump.txt; wc -l candump.txt

@@ -26,7 +26,7 @@ brief_questions:   # the five examples from the case study, each with 10 paraphr
     canonical: "Why has my driving range reduced over the last two weeks?"
     intent: range_drop
     truth: S01
-    must_mention: ["about 9% lower", "AC load ~60%", "stop-go traffic ~30%", "tyres normal"]
+    must_mention: ["range ~12% lower (consumption +8%)", "AC in hotter weather ~64% of the increase", "stop-go traffic ~36%", "tyres normal"]   # exact values: truth.json S01
     paraphrases:
       - "Why is my range worse lately?"
       - "My car isn't going as far on a full charge as it used to. Why?"
@@ -43,7 +43,7 @@ brief_questions:   # the five examples from the case study, each with 10 paraphr
     canonical: "When did fuel efficiency show the largest drop?"
     intent: efficiency_change
     truth: S02
-    must_mention: ["started around day 21-22 (25-26 Oct)", "worst on 30 Oct", "rear-left tyre pressure low"]
+    must_mention: ["started ~25 Oct", "worst on 30 Oct (~+8%)", "rear-left tyre pressure low", "back to normal after repair on 31 Oct"]
     paraphrases:
       - "When was my energy efficiency the worst?"
       - "On which day did consumption jump the most?"
@@ -77,7 +77,7 @@ brief_questions:   # the five examples from the case study, each with 10 paraphr
     canonical: "What happened before the battery overheating warning?"
     intent: before_event
     truth: S05
-    must_mention: ["DC fast charge", "coolant pump speed dropped", "P1A20", "temperature rose to 52 C", "power derated"]
+    must_mention: ["DC fast charge from 15:38", "coolant pump speed dropped to 900 rpm at 15:51 (P1A20)", "battery Tmax rose past 50 C", "power derated 150->60 kW at ~16:00 (P1A21)", "warning at 16:03"]
     paraphrases:
       - "What led up to the battery temperature warning?"
       - "Why did I get a battery too hot alert?"
@@ -94,7 +94,7 @@ brief_questions:   # the five examples from the case study, each with 10 paraphr
     canonical: "Compare energy consumption between city and highway driving."
     intent: segment_compare
     truth: S06
-    must_mention: ["city ~14-16 kWh/100 km", "highway ~18-20 kWh/100 km", "reason: aerodynamic drag at speed, regen in city"]
+    must_mention: ["city ~18 kWh/100 km", "highway ~20 kWh/100 km", "reason: aerodynamic drag at 100-115 km/h vs stop-go + AC in city"]   # exact: truth.json S06
     paraphrases:
       - "Do I use more energy in the city or on the highway?"
       - "City vs highway efficiency?"
@@ -111,7 +111,7 @@ long_tail:   # answered via the SMART path (SLM writes a plan); truth checked by
   - {q: "Why did my 12 V battery warning come on last month?",                        truth: S07}
   - {q: "Did the car have any problems in the first two weeks?",                     truth: S09, expect: "no faults"}
   - {q: "How much energy did the AC use last week?",                                  truth: S01}
-  - {q: "Was there any missing data on 19 October?",                                  truth: S08, expect: "40-minute gap"}
+  - {q: "Was there any missing data on 19 October?",                                  truth: S08, expect: "20-minute gap 18:17-18:37"}
   - {q: "How many times did I fast charge in November?",                              truth: charging_log}
   - {q: "What was my longest trip?",                                                  truth: trip_table}
   - {q: "Did braking get harsher on rainy days?",                                     truth: trip_table}
