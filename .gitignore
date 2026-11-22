@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+.pytest_cache/
+
+# Generated data and models (too big for git; recreated by scripts)
+data/*
+!data/.gitkeep
+models/*
+!models/.gitkeep
+*.gguf
+*.db
+*.sqlite
+*.mf4
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
