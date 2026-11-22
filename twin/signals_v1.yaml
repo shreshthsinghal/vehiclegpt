@@ -1,0 +1,122 @@
+# VehicleGPT signal catalogue v1 (Phase 0)
+#
+# Every signal the digital twin produces, named with COVESA VSS (Vehicle Signal Specification) paths.
+# Signals that standard VSS does not define live under "Vehicle.Private.*", which is how VSS overlays
+# are meant to add OEM-specific signals.
+#
+# source  = the in-vehicle protocol the value arrives on (what the SENSE adapter listens to)
+# rate_hz = how often the simulated ECU publishes it
+# tier    = MUST signals are built first; SHOULD signals are added if time allows
+#
+# v1 = 67 named signals + 128 array signals (96 cell voltages + 32 module temperatures) = 195.
+# The Round 1 deck says "~400 signals". Phase 1 decides: either add per-cell temperatures (+96) and
+# per-wheel speed/slip arrays to honestly reach ~400, or correct the deck to the real measured count.
+
+vehicle_profile:
+  name: "Nexus EV (simulated mid-size electric SUV)"
+  battery_kwh_usable: 60
+  rated_range_km: 400
+  mass_kg: 1900
+  notes: "Generic EV numbers chosen to be realistic for the Indian market; not modelled on a real product."
+
+signals:
+  # ---------------- Motion & driver inputs (CAN, powertrain/chassis buses) ----------------
+  - {path: Vehicle.Speed,                                   unit: km/h,    source: CAN, rate_hz: 10, tier: MUST}
+  - {path: Vehicle.TraveledDistance,                        unit: km,      source: CAN, rate_hz: 1,  tier: MUST}
+  - {path: Vehicle.Acceleration.Longitudinal,               unit: m/s^2,   source: CAN, rate_hz: 10, tier: MUST}
+  - {path: Vehicle.Acceleration.Lateral,                    unit: m/s^2,   source: CAN, rate_hz: 10, tier: SHOULD}
+  - {path: Vehicle.Chassis.Accelerator.PedalPosition,       unit: percent, source: CAN, rate_hz: 10, tier: MUST}
+  - {path: Vehicle.Chassis.Brake.PedalPosition,             unit: percent, source: CAN, rate_hz: 10, tier: MUST}
+  - {path: Vehicle.Chassis.SteeringWheel.Angle,             unit: degrees, source: CAN, rate_hz: 10, tier: SHOULD}
+  - {path: Vehicle.Powertrain.Transmission.SelectedGear,    unit: enum,    source: CAN, rate_hz: 1,  tier: MUST}
+
+  # ---------------- Traction battery (CAN-FD, battery management system) ----------------
+  - {path: Vehicle.Powertrain.TractionBattery.StateOfCharge.Current,   unit: percent, source: CAN-FD, rate_hz: 1,  tier: MUST}
+  - {path: Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed, unit: percent, source: CAN-FD, rate_hz: 1,  tier: SHOULD}
+  - {path: Vehicle.Powertrain.TractionBattery.StateOfHealth,           unit: percent, source: CAN-FD, rate_hz: 0.01, tier: SHOULD}
+  - {path: Vehicle.Powertrain.TractionBattery.CurrentVoltage,          unit: V,       source: CAN-FD, rate_hz: 10, tier: MUST}
+  - {path: Vehicle.Powertrain.TractionBattery.CurrentCurrent,          unit: A,       source: CAN-FD, rate_hz: 10, tier: MUST}
+  - {path: Vehicle.Powertrain.TractionBattery.CurrentPower,            unit: W,       source: CAN-FD, rate_hz: 10, tier: MUST}
+  - {path: Vehicle.Powertrain.TractionBattery.Temperature.Average,     unit: celsius, source: CAN-FD, rate_hz: 1,  tier: MUST}
+  - {path: Vehicle.Powertrain.TractionBattery.Temperature.Max,         unit: celsius, source: CAN-FD, rate_hz: 1,  tier: MUST}
+  - {path: Vehicle.Powertrain.TractionBattery.Temperature.Min,         unit: celsius, source: CAN-FD, rate_hz: 1,  tier: SHOULD}
+  - {path: Vehicle.Powertrain.TractionBattery.Range,                   unit: m,       source: CAN-FD, rate_hz: 1,  tier: MUST}
+  - {path: Vehicle.Powertrain.TractionBattery.Charging.IsCharging,     unit: bool,    source: CAN-FD, rate_hz: 1,  tier: MUST}
+  - {path: Vehicle.Powertrain.TractionBattery.Charging.ChargeCurrent.DC, unit: A,     source: CAN-FD, rate_hz: 1,  tier: MUST}
+  - {path: Vehicle.Powertrain.TractionBattery.Charging.ChargeCurrent.AC, unit: A,     source: CAN-FD, rate_hz: 1,  tier: SHOULD}
+  - {path: Vehicle.Private.TractionBattery.PowerLimit.Discharge,       unit: kW,      source: CAN-FD, rate_hz: 1,  tier: MUST,   note: "derating shows up here"}
+  - {path: Vehicle.Private.TractionBattery.CellVoltage.Min,            unit: V,       source: CAN-FD, rate_hz: 1,  tier: SHOULD}
+  - {path: Vehicle.Private.TractionBattery.CellVoltage.Max,            unit: V,       source: CAN-FD, rate_hz: 1,  tier: SHOULD}
+
+  # ---------------- Electric drive ----------------
+  - {path: Vehicle.Powertrain.ElectricMotor.Speed,          unit: rpm,     source: CAN, rate_hz: 10, tier: MUST}
+  - {path: Vehicle.Powertrain.ElectricMotor.Temperature,    unit: celsius, source: CAN, rate_hz: 1,  tier: MUST}
+  - {path: Vehicle.Private.ElectricMotor.Torque,            unit: Nm,      source: CAN, rate_hz: 10, tier: SHOULD}
+  - {path: Vehicle.Private.Powertrain.RegenPower,           unit: kW,      source: CAN, rate_hz: 10, tier: MUST}
+
+  # ---------------- Thermal system (SOME/IP thermal-management service) ----------------
+  - {path: Vehicle.Private.Thermal.CoolantTemperature.Battery, unit: celsius, source: SOME/IP, rate_hz: 1, tier: MUST}
+  - {path: Vehicle.Private.Thermal.CoolantPump.Speed,          unit: rpm,     source: SOME/IP, rate_hz: 1, tier: MUST}
+  - {path: Vehicle.Private.Thermal.CoolantPump.Current,        unit: A,       source: SOME/IP, rate_hz: 1, tier: SHOULD}
+  - {path: Vehicle.Private.Thermal.ChillerActive,              unit: bool,    source: SOME/IP, rate_hz: 1, tier: SHOULD}
+
+  # ---------------- Cabin & HVAC (Android VHAL properties on the infotainment side) ----------------
+  - {path: Vehicle.Cabin.HVAC.IsAirConditioningActive,          unit: bool,    source: VHAL, rate_hz: 1, tier: MUST}
+  - {path: Vehicle.Cabin.HVAC.AmbientAirTemperature,            unit: celsius, source: VHAL, rate_hz: 1, tier: MUST}
+  - {path: Vehicle.Cabin.HVAC.Station.Row1.Driver.Temperature,  unit: celsius, source: VHAL, rate_hz: 1, tier: MUST, note: "set point"}
+  - {path: Vehicle.Cabin.HVAC.Station.Row1.Driver.FanSpeed,     unit: percent, source: VHAL, rate_hz: 1, tier: SHOULD}
+  - {path: Vehicle.Private.HVAC.CompressorPower,                unit: kW,      source: CAN,  rate_hz: 1, tier: MUST, note: "AC load used by range attribution"}
+  - {path: Vehicle.Private.HVAC.HeaterPower,                    unit: kW,      source: CAN,  rate_hz: 1, tier: SHOULD}
+
+  # ---------------- Environment ----------------
+  - {path: Vehicle.Exterior.AirTemperature,                 unit: celsius, source: CAN,  rate_hz: 1, tier: MUST}
+  - {path: Vehicle.Body.Windshield.Front.Wiping.Mode,       unit: enum,    source: CAN,  rate_hz: 1, tier: MUST, note: "rain proxy"}
+  - {path: Vehicle.Body.Lights.Beam.Low.IsOn,               unit: bool,    source: CAN,  rate_hz: 1, tier: SHOULD, note: "night proxy"}
+  - {path: Vehicle.CurrentLocation.Latitude,                unit: degrees, source: VHAL, rate_hz: 1, tier: MUST, note: "stored coarsened to ~1 km for privacy"}
+  - {path: Vehicle.CurrentLocation.Longitude,               unit: degrees, source: VHAL, rate_hz: 1, tier: MUST, note: "stored coarsened to ~1 km for privacy"}
+  - {path: Vehicle.Private.Road.Type,                       unit: enum,    source: VHAL, rate_hz: 1, tier: MUST, note: "city/highway from navigation map"}
+
+  # ---------------- Tyres (CAN, tyre-pressure monitoring) ----------------
+  - {path: Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.Pressure,  unit: kPa, source: CAN, rate_hz: 0.2, tier: MUST}
+  - {path: Vehicle.Chassis.Axle.Row1.Wheel.Right.Tire.Pressure, unit: kPa, source: CAN, rate_hz: 0.2, tier: MUST}
+  - {path: Vehicle.Chassis.Axle.Row2.Wheel.Left.Tire.Pressure,  unit: kPa, source: CAN, rate_hz: 0.2, tier: MUST}
+  - {path: Vehicle.Chassis.Axle.Row2.Wheel.Right.Tire.Pressure, unit: kPa, source: CAN, rate_hz: 0.2, tier: MUST}
+
+  # ---------------- ADAS (SOME/IP ADAS service + CAN status) ----------------
+  - {path: Vehicle.ADAS.CruiseControl.IsActive,               unit: bool, source: SOME/IP, rate_hz: 1, tier: MUST}
+  - {path: Vehicle.ADAS.LaneDepartureDetection.IsEnabled,     unit: bool, source: SOME/IP, rate_hz: 1, tier: MUST}
+  - {path: Vehicle.ADAS.LaneDepartureDetection.IsWarning,     unit: bool, source: SOME/IP, rate_hz: 1, tier: MUST}
+  - {path: Vehicle.Private.ADAS.LaneKeepAssist.IsActive,      unit: bool, source: SOME/IP, rate_hz: 1, tier: MUST}
+  - {path: Vehicle.Private.ADAS.LaneMarkingConfidence,        unit: percent, source: SOME/IP, rate_hz: 1, tier: MUST, note: "drops before a lane-loss disengagement"}
+  - {path: Vehicle.ADAS.ABS.IsEngaged,                        unit: bool, source: CAN, rate_hz: 10, tier: SHOULD}
+  - {path: Vehicle.ADAS.ESC.IsEngaged,                        unit: bool, source: CAN, rate_hz: 10, tier: SHOULD}
+  - {path: Vehicle.ADAS.EBA.IsEngaged,                        unit: bool, source: CAN, rate_hz: 10, tier: SHOULD}
+
+  # ---------------- Camera (metadata only; no images by default) ----------------
+  - {path: Vehicle.Private.Camera.Front.Status,               unit: enum, source: SOME/IP, rate_hz: 1, tier: MUST, note: "OK / DEGRADED / BLOCKED / OFFLINE"}
+  - {path: Vehicle.Private.Camera.Front.ObjectCount,          unit: count, source: SOME/IP, rate_hz: 1, tier: SHOULD}
+  - {path: Vehicle.Private.Camera.Front.Visibility,           unit: percent, source: SOME/IP, rate_hz: 1, tier: MUST}
+
+  # ---------------- Low-voltage system & diagnostics ----------------
+  - {path: Vehicle.LowVoltageBattery.CurrentVoltage,          unit: V,    source: CAN, rate_hz: 1, tier: MUST}
+  - {path: Vehicle.OBD.DTCList,                               unit: list, source: UDS, rate_hz: event, tier: MUST}
+  - {path: Vehicle.Private.Vehicle.PowerState,                unit: enum, source: CAN, rate_hz: 1, tier: MUST, note: "OFF / ACC / ON / CHARGING; drives key-off flush"}
+
+  # ---------------- Derived per trip (computed by the event miner, stored with the trip) ----------------
+  - {path: Vehicle.Private.Trip.EnergyConsumption,  unit: kWh/100km, source: derived, rate_hz: trip, tier: MUST}
+  - {path: Vehicle.Private.Trip.StopGoRatio,        unit: percent,   source: derived, rate_hz: trip, tier: MUST}
+  - {path: Vehicle.Private.Trip.AverageSpeed,       unit: km/h,      source: derived, rate_hz: trip, tier: MUST}
+  - {path: Vehicle.Private.Trip.HvacEnergyShare,    unit: percent,   source: derived, rate_hz: trip, tier: MUST}
+  - {path: Vehicle.Private.Trip.CityShare,          unit: percent,   source: derived, rate_hz: trip, tier: MUST}
+
+# Generated automatically from the battery/wheel models to reach the ~400-signal scale (tier SHOULD):
+arrays:
+  - {pattern: "Vehicle.Private.TractionBattery.Cell[1..96].Voltage",      count: 96, unit: V,       source: CAN-FD, rate_hz: 0.2}
+  - {pattern: "Vehicle.Private.TractionBattery.Module[1..32].Temperature", count: 32, unit: celsius, source: CAN-FD, rate_hz: 0.2}
+
+# Non-signal sources (stored as events/logs, not time series):
+logs_and_events:
+  - {name: "QNX slog2 / DLT system logs",    examples: ["camera service restart", "SOME/IP service not available", "watchdog reset"], tier: MUST}
+  - {name: "UDS diagnostic trouble codes",   examples: ["simulated OEM codes, see fault_catalogue.yaml"], tier: MUST}
+  - {name: "ADAS events",                    examples: ["LKA disengaged (reason code)", "ACC cancelled", "EBA activation"], tier: MUST}
+  - {name: "Vehicle warnings (cluster)",     examples: ["Battery temperature high", "Reduced power", "Check tyre pressure"], tier: MUST}

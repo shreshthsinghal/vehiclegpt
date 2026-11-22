@@ -1,0 +1,110 @@
+# VehicleGPT scenario & fault catalogue v1 (Phase 0)
+#
+# The digital twin simulates 56 days (8 weeks) of driving. On top of normal driving it plants the
+# faults below at known times. Each fault carries a TRUTH LABEL (what really caused it), so we can
+# grade VehicleGPT's answers automatically instead of just claiming they are right.
+#
+# Design rules
+#  - Every brief question (Q1-Q5) is backed by at least one scenario.
+#  - Several scenarios have MORE THAN ONE cause, or a DISTRACTOR (something that looks guilty but is not),
+#    so the test is not too easy (risk R7).
+#  - DTC codes are SIMULATED manufacturer-specific codes (P1xxx / U1xxx / B1xxx ranges), not claims about any
+#    real vehicle's codes.
+
+simulation:
+  days: 56
+  start_date: "2026-10-05"          # Monday; 56 days ends 2026-11-29
+  location: "Goa / Pune corridor (simulated)"
+  driving_pattern:
+    weekday: "2 commute trips (city, 12-18 km each) + occasional errand"
+    weekend: "1 highway trip (80-160 km) on ~50% of weekends"
+    average_drive_hours_per_day: 2   # matches Round 1 storage assumption
+  charging: "home AC overnight 3-4 times/week; DC fast charge on highway trips"
+  weather: "post-monsoon: 26-34 C, hotter from week 5 (late-Oct heat), 6 rainy days with low visibility"
+
+dtc_dictionary:   # simulated codes used by the twin
+  P1A20: "Battery coolant pump performance low (simulated)"
+  P1A21: "Battery temperature above threshold - power derated (simulated)"
+  C1T10: "Tyre pressure low - rear left (simulated)"
+  U1C01: "Lost communication with front camera module (simulated)"
+  B1C02: "Front camera view obstructed (simulated)"
+  P1B05: "12 V battery voltage low (simulated)"
+
+scenarios:
+  - id: S01
+    name: "Range drop over the last two weeks"
+    tests: [Q1]
+    window: "days 43-56 vs days 29-42"
+    causes:                       # truth label: contribution to the extra energy per km
+      - {cause: "AC load in hot afternoons (ambient 33-36 C)", share_pct: 60, signals: [Vehicle.Private.HVAC.CompressorPower, Vehicle.Exterior.AirTemperature]}
+      - {cause: "More stop-go city traffic (festival season)", share_pct: 30, signals: [Vehicle.Private.Trip.StopGoRatio]}
+      - {cause: "Unexplained / normal variation",             share_pct: 10}
+    distractors:
+      - "Tyres are NORMAL in this window (S02 is fixed by day 40) - the answer must say tyres are fine"
+      - "Battery state of health unchanged (99%)"
+    expected_effect: "displayed range ~9% lower at the same state of charge"
+
+  - id: S02
+    name: "Slow puncture - efficiency drop with a clear start date"
+    tests: [Q2]
+    timeline:
+      - {day: 20, event: "rear-left tyre starts losing pressure 240 -> 175 kPa over 6 days"}
+      - {day: 26, event: "DTC C1T10 + cluster warning 'Check tyre pressure'"}
+      - {day: 27, event: "tyre repaired, pressure back to 240 kPa"}
+    truth: "largest efficiency drop starts on day 21-22 (change point), worst on day 26 (+7% kWh/100 km)"
+    distractors: ["a long highway trip on day 24 also raises kWh/100 km - should be normalised by speed"]
+
+  - id: S03
+    name: "ADAS lane-keep disengagements in rain"
+    tests: [Q3]
+    day: 55             # "yesterday" when the demo runs on day 56
+    events:
+      - "4 lane-keep-assist (LKA) disengagements on the evening highway trip"
+      - "wipers on HIGH, camera visibility 35-50%, lane-marking confidence < 40% before each one"
+    truth: "cause = poor lane visibility in heavy rain (not a fault)"
+
+  - id: S04
+    name: "Front camera obstructed / camera service crash"
+    tests: [Q3]
+    day: 55
+    events:
+      - "1 extra LKA disengagement at 18:42 with a DIFFERENT cause"
+      - "QNX log: camera service restarted 3 times in 20 s; DTC U1C01 logged then cleared"
+    truth: "cause = camera module communication loss (a real fault, should be serviced)"
+    why_it_matters: "Q3 answer must separate the 4 rain-related events from the 1 fault-related event"
+
+  - id: S05
+    name: "Battery overheating warning after DC fast charge"
+    tests: [Q4]
+    day: 48
+    sequence:                     # truth label = the chain of events, in order
+      - {t: "-25 min", event: "DC fast charge at 34 C ambient"}
+      - {t: "-12 min", event: "coolant pump speed drops 3200 -> 900 rpm (pump degrading); DTC P1A20"}
+      - {t: "-6 min",  event: "battery max temperature rises 38 -> 52 C"}
+      - {t: "-2 min",  event: "discharge power limit derated 150 -> 60 kW (DTC P1A21)"}
+      - {t: "0",       event: "cluster warning 'Battery temperature high'"}
+    root_cause: "coolant pump performance low (P1A20) during high-load charging"
+    distractors: ["ambient was hot, but the same charge on day 41 at 35 C did NOT overheat (pump was fine then)"]
+
+  - id: S06
+    name: "City vs highway energy comparison"
+    tests: [Q5]
+    truth: "city ~14-16 kWh/100 km, highway ~18-20 kWh/100 km (higher aero drag at 90-110 km/h; regen helps in city)"
+    notes: "computed over all 8 weeks; AC load reported separately"
+
+  - id: S07
+    name: "12 V battery slow drain (long-tail question)"
+    day_range: "33-36"
+    events: ["12 V resting voltage 12.6 -> 11.9 V over 4 nights; DTC P1B05 on day 36; normal after day 37"]
+    truth: "parasitic drain overnight; resolved after day 37"
+
+  - id: S08
+    name: "Data gap - CAN logging dropout (robustness)"
+    day: 15
+    events: ["no CAN data for 40 minutes during a trip (simulated logger fault)"]
+    truth: "answers covering day 15 must say data is incomplete, not invent values"
+
+  - id: S09
+    name: "Normal baseline weeks (false-positive check)"
+    day_range: "1-14"
+    truth: "no faults; questions about this period should NOT report anomalies"
