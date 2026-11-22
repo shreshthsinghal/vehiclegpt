@@ -24,7 +24,7 @@ def line(ok, name, detail):
 
 print("VehicleGPT setup check\n")
 v = sys.version_info
-line((3, 11) <= (v.major, v.minor) <= (3, 12), "Python", f"{platform.python_version()} (need 3.11 or 3.12)")
+line((3, 11) <= (v.major, v.minor) <= (3, 13), "Python", f"{platform.python_version()} (need 3.11-3.13; project standard is 3.13)")
 line(True, "OS / CPU", f"{platform.system()} {platform.release()} / {platform.machine()}")
 
 git = shutil.which("git")
