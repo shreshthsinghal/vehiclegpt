@@ -18,12 +18,15 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.13", cache: pip}
       - run: pip install -r requirements.txt
+      - name: CPU fingerprint (native builds are CPU-specific)
+        id: cpu
+        run: echo "id=$(lscpu | grep -E 'Model name|Flags' | md5sum | cut -c1-10)" >> $GITHUB_OUTPUT
       - name: Cache llama.cpp build
         id: llcache
         uses: actions/cache@v4
         with:
           path: llama.cpp/build/bin
-          key: llama-${{ runner.os }}-${{ runner.arch }}-v1
+          key: llama-${{ runner.os }}-${{ runner.arch }}-${{ steps.cpu.outputs.id }}-v2
       - name: Build llama-server (CPU)
         if: steps.llcache.outputs.cache-hit != 'true'
         run: |
