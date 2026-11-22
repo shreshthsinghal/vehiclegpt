@@ -5,5 +5,7 @@ cantools>=40
 msgpack>=1.0        # needed by python-can's udp_multicast bus (Windows/macOS CAN transport)
 pyyaml>=6.0
 drain3>=0.9.11       # log template mining (SENSE)
+cryptography>=42    # AES-256-GCM encryption at rest (REMEMBER)
+sqlite-vec>=0.1.6   # vector search table (filled in Phase 4)
 psutil>=5.9         # memory measurement on Windows
 pytest>=8.0

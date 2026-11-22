@@ -34,7 +34,8 @@ def peak_rss_mb() -> float | None:
             return None
 
 
-def backfill(twin: Path = TWIN, out: Path = OUT, days: int | None = None, extra_sinks=(), quiet=False) -> dict:
+def backfill(twin: Path = TWIN, out: Path = OUT, days: int | None = None, extra_sinks=(), quiet=False,
+             case_writer=None) -> dict:
     t0 = time.time()
     blfs = sorted((twin / "can").glob("day*.blf"))[: days or None]
     dec = CanDecoder()
@@ -48,7 +49,7 @@ def backfill(twin: Path = TWIN, out: Path = OUT, days: int | None = None, extra_
         end_ts = (first // 86400) * 86400 + 86400 * days + 86400   # generous: stop after the last selected day
     import shutil
     shutil.rmtree(out / "cases", ignore_errors=True)
-    eng = Engine([JsonlSink(out), *extra_sinks], cases_dir=out / "cases")
+    eng = Engine([JsonlSink(out), *extra_sinks], cases_dir=out / "cases", case_writer=case_writer)
     n = 0
     for rec in heapq.merge(*streams, key=lambda r: r[0]):
         if end_ts and rec[0] > end_ts:
@@ -59,7 +60,7 @@ def backfill(twin: Path = TWIN, out: Path = OUT, days: int | None = None, extra_
             print(f"\r  {n:,} records  {eng.snapshots:,} snapshots  {sum(eng.events_by_type.values()):,} events",
                   end="", flush=True)
     eng.finish()
-    report = {"records": dict(eng.counts), "snapshots_1hz": eng.snapshots, "vss_paths_seen": len(eng.paths),
+    report = {"last_ts": eng.sec, "records": dict(eng.counts), "snapshots_1hz": eng.snapshots, "vss_paths_seen": len(eng.paths),
               "events": dict(sorted(eng.events_by_type.items())), "case_files": len(eng.bb.written),
               "unknown_can_ids": dec.unknown, "tx_attempts": COUNTERS["tx_attempts"],
               "egress_bytes": COUNTERS["egress_bytes"], "seconds": round(time.time() - t0, 1),

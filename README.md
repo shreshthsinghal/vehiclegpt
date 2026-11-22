@@ -65,5 +65,19 @@ Live (two terminals): `python -m sense.ingest --live`, then `python -m twin.repl
 | `sense/engine.py` | 1 Hz normalised snapshot; event miner (trips, charges, warnings, DTCs, ADAS, data gaps, contextual anomalies, Drain3 log templates); black box (-60 s / +10 s case files) |
 | `safety/guards.py` | `ListenOnlyBus`: any CAN transmit raises and is counted (must stay 0) |
 
+## Phase 3: REMEMBER (tiered on-device memory)
+```
+python -m remember.build      # SENSE -> data/store/vehicle.db (+ encrypted case files) and a size report
+```
+| Tier | Content | Kept | Measured (8 weeks, 1.4 h/day) |
+|---|---|---|---|
+| HOT | last 10 min of 1 Hz snapshots, RAM ring | 10 min | in memory |
+| WARM | 1 Hz, all 192 signals, 10-min compressed blocks (delta-of-delta + quantised deltas + zlib, lossless) | 14 days | 0.49 bytes/reading |
+| COLD | 1-minute min/max/mean/count per signal | 400 days | 0.41 MB/day |
+| PINNED | black-box case files | forever | ~5 KB each |
+
+Plus trips, charges, events, logs (FTS5 keyword search), DTC descriptions. Time-series blocks and case files are
+AES-256-GCM encrypted (key file stands in for the vehicle HSM). Total on disk: ~36 MB for 8 weeks.
+
 ## Status
-Phase 2 (SENSE) complete. Tests: `python -m pytest -q` (9 tests, ~2 min).
+Phase 3 (REMEMBER) complete. Tests: `python -m pytest -q` (13 tests, ~4 min).

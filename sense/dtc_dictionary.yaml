@@ -1,0 +1,7 @@
+# Diagnostic trouble code descriptions (vehicle service documentation; simulated OEM-specific codes).
+P1A20: "Battery coolant pump performance low"
+P1A21: "Battery temperature above threshold - power derated"
+C1A10: "Tyre pressure low - rear left"
+U1C01: "Lost communication with front camera module"
+B1C02: "Front camera view obstructed"
+P1B05: "12 V battery voltage low"

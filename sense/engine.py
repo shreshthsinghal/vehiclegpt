@@ -229,7 +229,7 @@ class Miner:
         dist = odo_km if odo_km and odo_km > 0 else tr["dist_cov"] + tr["dist_gap"]
         cons = tr["energy"] / tr["dist_cov"] * 100 if tr["dist_cov"] > 0.5 else None
         self.emit({"ts": tr["start"], "type": "TRIP", "source": "miner", "severity": "info",
-                   "start": clock(tr["start"]), "end": clock(tr.get("end", sec)),
+                   "end_ts": tr.get("end", sec), "start": clock(tr["start"]), "end": clock(tr.get("end", sec)),
                    "duration_min": round((tr.get("end", sec) - tr["start"]) / 60, 1), "distance_km": round(dist, 2),
                    "energy_kwh": round(tr["energy"], 3), "kwh_per_100km": round(cons, 2) if cons else None,
                    "avg_speed_kmh": round(tr["dist_cov"] / max(tr["cov_s"], 1) * 3600, 1),
@@ -267,7 +267,7 @@ class Miner:
     def _close_charge(self, sec):
         c, self.charge = self.charge, None
         self.emit({"ts": c["start"], "type": "CHARGE", "source": "miner", "severity": "info",
-                   "charger": "DC_FAST" if c["dc"] else "AC_HOME", "start": clock(c["start"]), "end": clock(c.get("end", sec)),
+                   "end_ts": c.get("end", sec), "charger": "DC_FAST" if c["dc"] else "AC_HOME", "start": clock(c["start"]), "end": clock(c.get("end", sec)),
                    "duration_min": round((c.get("end", sec) - c["start"]) / 60, 1), "energy_added_kwh": round(c["kwh"], 2),
                    "soc_start": c["soc0"], "soc_end": c["last"].get(SOC), "batt_tmax_c": round(c["tmax"], 1),
                    "ambient_avg_c": round(c["amb"] / c["amb_n"], 1) if c["amb_n"] else None})
@@ -287,7 +287,8 @@ class Miner:
 
 # ============================================================================ black box
 class BlackBox:
-    def __init__(self, out_dir: Path | None, pre: int = 60, post: int = 10):
+    def __init__(self, out_dir: Path | None, pre: int = 60, post: int = 10, writer=None):
+        self.writer = writer            # optional callback(case_dict) -> e.g. encrypted store (Phase 3)
         self.dir = out_dir
         if out_dir:
             out_dir.mkdir(parents=True, exist_ok=True)
@@ -341,20 +342,22 @@ class BlackBox:
                 "logs_in_window": [dict(l, untrusted_text=True) for l in self.logs if lo <= l["ts"] <= hi],
                 "signals": {"t": [r[0] for r in rows], **{p: [s.get(p) for _, s in rows] for p in paths}}}
         self.written.append(c["id"])
-        if self.dir:
+        if self.writer:
+            self.writer(case, c["t0"])
+        elif self.dir:
             with gzip.open(self.dir / f"{c['id']}.json.gz", "wt", encoding="utf-8") as f:
                 json.dump(case, f, separators=(",", ":"), default=float)
 
 
 # ============================================================================ engine
 class Engine:
-    def __init__(self, sinks=(), cases_dir: Path | None = None):
+    def __init__(self, sinks=(), cases_dir: Path | None = None, case_writer=None):
         self.state: dict = {}
         self.sec = None
         self.last = {"can": -1e12, "someip": -1e12, "vhal": -1e12}
         self.sinks = list(sinks)
         self.miner = Miner(self._emit)
-        self.bb = BlackBox(cases_dir)
+        self.bb = BlackBox(cases_dir, writer=case_writer)
         self.counts: Counter = Counter()
         self.events_by_type: Counter = Counter()
         self.paths: set = set()
