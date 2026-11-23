@@ -63,6 +63,8 @@ class App:
         self.vg = VehicleGPT(store_path, planner=planner)
         self.st = self.vg.store
         self.roles = load_roles()
+        for q in ("why has my range dropped", "what happened before the warning"):   # warm caches before serving
+            self.vg.ask(q)
         self.started = time.time()
 
     # ------------------------------------------------------------------ helpers
