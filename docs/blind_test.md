@@ -21,6 +21,7 @@ No unsafe action was possible in any case: VehicleGPT has no transmit path (CAN 
 | Measure | Baseline (blind) | After fixes (tuned on these) |
 |---|---|---|
 | Routed right (FAST only) | 18/41 | **40/41** |
+| Routed right (with the SLM, CI run 45141857048) | 19/41 | **40/41** (Q8 tyres: the SLM chose current status) |
 | Data questions | 13/28 | 27/28 (the miss, Q9, is answered correctly by the trip analysis) |
 | Refusals | 4/7 | **7/7** |
 | Honest "not recorded" | 1/6 | **6/6** |
