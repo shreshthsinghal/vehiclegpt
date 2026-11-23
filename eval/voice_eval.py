@@ -74,7 +74,8 @@ def main():
                          "intent": spoken.intent, "same_as_typed": ok, "verified": spoken.verified})
             print(f"{'OK ' if ok else 'XX '} {r['ms']:5d} ms  {q!r} -> {r['text']!r} [{spoken.intent}]")
     peak_child_mb = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss / 1024
-    res = {"model": speech.model_path().name, "questions": len(QUESTIONS), "same_analysis_as_typed": f"{same}/{len(QUESTIONS)}",
+    import os
+    res = {"model": speech.model_path().name, "settings": "full 30 s window, beam 5" if os.environ.get("VGPT_WHISPER_FULL") == "1" else "clip-sized window, greedy", "questions": len(QUESTIONS), "same_analysis_as_typed": f"{same}/{len(QUESTIONS)}",
            "mean_word_error_rate": round(statistics.mean(errs), 3), "stt_ms_p50": round(statistics.median(lat)),
            "stt_ms_max": max(lat), "whisper_peak_rss_mb": round(peak_child_mb, 1), "rows": rows}
     print("RESULT " + json.dumps(res))

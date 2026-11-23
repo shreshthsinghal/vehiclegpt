@@ -86,8 +86,13 @@ def transcribe(data: bytes, threads: int = 2) -> dict:
     with tempfile.TemporaryDirectory() as tmp:                   # audio is deleted as soon as it is transcribed
         wav = Path(tmp) / "q.wav"
         wav.write_bytes(data)
+        seconds = (len(data) - 44) / 32000
         cmd = [binary(), "-m", str(model_path()), "-f", str(wav), "-l", "en", "-t", str(threads),
                "-nt", "-np", "--prompt", PROMPT]
+        if os.environ.get("VGPT_WHISPER_FULL") != "1":
+            # Speed-ups for short commands: encode only the recorded seconds (whisper's 1500-frame window is
+            # 30 s, i.e. 50 frames/s) and decode greedily without temperature fallback.
+            cmd += ["-ac", str(min(1500, int(seconds * 50) + 128)), "-bs", "1", "-bo", "1", "-nf"]
         out = subprocess.run(cmd, capture_output=True, text=True, timeout=30,
                              creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     text = clean(out.stdout)

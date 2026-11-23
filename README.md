@@ -89,9 +89,36 @@ python scripts/start_llm.py                # ... and run llama-server on 127.0.0
 
 ## Phase 5: ASK (offline HMI for driver, service, fleet, validation)
 ```
-python -m ask.server                       # open http://127.0.0.1:8765 ; role PINs are printed at start-up
+python -m ask.server                       # driver head-unit: http://127.0.0.1:8765  · engineer console: /console
 ```
-![driver](docs/screens/driver_range.png)
+Role PINs for the console (service, fleet, validation) are printed at start-up.
+
+## Phase 7: head-unit screen and on-device voice
+![head unit](docs/screens/hmi/07_range_drop_factors.png)
+
+The driver's screen is styled like a car head unit. You tap the orb (or press **Space**) and ask a question. The orb
+*listens*, then *thinks* (Understanding → Reading memory → Checking every number), then *answers* with:
+- one big number;
+- factor cards: for example, what is hurting your range, rated High/Medium;
+- a small chart, a tip, and follow-up questions;
+- a **How I know** drawer that shows the evidence.
+
+The screen never computes numbers itself: `ask/present.py` copies them from verified facts, and `ui_verified`
+re-checks every number the screen shows.
+
+| Inspiration feature | How it's done within the brief's limits |
+|---|---|
+| Glass panels, teal orb, animations | One offline HTML file (CSS + SVG + canvas): no web fonts, CDNs or images. Decorative motion pauses after 15 s idle (0% CPU); *Eco motion* turns it off. |
+| Voice in | Mic → WAV → `/api/listen` on 127.0.0.1 → **whisper.cpp** (tiny.en, 75 MB). The model loads only while transcribing; audio goes to a temp file that is deleted after transcription. No cloud speech API. |
+| Voice out | Browser speech synthesis restricted to **on-device voices** (`localService`); never a network voice. |
+| "What's affecting your range" | Real Shapley-style attribution from the `range_drop` playbook (AC in heat vs stop-start traffic), with tyres and battery ruled out. |
+| Map / music tiles | Drawn placeholders marked *DEMO TILE* (no Google Maps, no real songs or album art). |
+| Driver distraction | *Glance mode while driving*: headline + two cards + voice; full details when parked. |
+| Safety | Refusals show a shield card; the assistant is read-only (CAN TX = 0). |
+
+Turn on voice input once: `python scripts/get_model.py --speech` (Windows downloads whisper.cpp automatically).
+Demo framing: `?bezel=0` removes the dashboard frame, **B** toggles it, `?fresh=1` replays onboarding, and `?q=...` asks directly.
+All 14 states are in `docs/screens/hmi/`.
 
 ## Status
-Phase 5 (ASK) complete. Tests: `python -m pytest -q` (22 tests, ~3 min).
+Phase 7a (head-unit screen + voice) complete. Tests: `python -m pytest -q` (24 tests, ~3 min).
