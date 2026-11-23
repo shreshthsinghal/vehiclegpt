@@ -181,6 +181,9 @@ def range_drop(ctx: Ctx, q: str, plan: dict) -> Answer:
                ("AC energy", f"{r1(acA / dist(A) * 100)} -> {r1(acB / dist(B) * 100)} kWh/100 km"),
                ("stopped time", f"{r1(sg(A))}% -> {r1(sg(B))}%")]
     a.next = "Pre-cool the cabin while the car is still plugged in, and use recirculation in heavy traffic."
+    a.chart = {"type": "bar", "title": "What added energy per 100 km", "unit": "kWh/100 km",
+               "labels": ["AC in the heat", "stop-go traffic", "other"],
+               "values": [r2(max(heat, 0)), r2(max(traffic, 0)), r2(delta - max(heat, 0) - max(traffic, 0))]}
     return a
 
 
@@ -247,6 +250,9 @@ def efficiency_change(ctx: Ctx, q: str, plan: dict) -> Answer:
         a.confidence = "medium"
     a.proof = [("worst day", fmt_date(worst_t)), ("excess energy", f"{r1(worst_ex)}%"),
                ("trips analysed", str(len(trips)))]
+    a.chart = {"type": "line", "title": "Extra energy vs normal, per day", "unit": "%",
+               "labels": [fmt_date(s[0])[4:] for s in series], "values": [r1(x) for x in excess],
+               "highlight": [i0, i1]}
     f("n_trips", len(trips))
     return a
 
@@ -334,7 +340,7 @@ def before_event(ctx: Ctx, q: str, plan: dict) -> Answer:
     charges = [c for c in ctx.st.table("charges", T - 3 * 3600, T) if c["end_ts"] >= T - look]
     a.evidence += [f"events table: DTCs, anomalies and warnings {fmt_time(T - look)} - {fmt_time(T)}",
                    "charges table", "WARM tier: coolant pump speed, battery temperature, power limit",
-                   "logs: template IDs only (log text is never given to the language model)"]
+                   "system logs (shown to you; log text is never given to the language model)"]
     f = a.fact
     f("warn_time", fmt_time(T, False)); f("warn_date", fmt_date(T)); f("warn_code", target["code"])
     steps = []
@@ -425,6 +431,12 @@ def before_event(ctx: Ctx, q: str, plan: dict) -> Answer:
     if tmax.size and thermal:
         a.proof = [("peak battery temp", f"{r1(tmax.max())} °C"), ("chain length", f"{round((T - steps[0][0]) / 60)} min")]
     a.proof.append(("black-box file", target.get("case_id") or "-"))
+    if thermal and tmax.size:
+        step = max(1, tmax.size // 120)
+        tt, pp = ctx.st.series(P_PUMP, T - look, T + 60)
+        a.chart = {"type": "line", "title": "Battery temperature (max) before the warning", "unit": "°C",
+                   "labels": [fmt_time(x, False)[:5] for x in ts[::step]], "values": [r1(x) for x in tmax[::step]],
+                   "marker": fmt_time(T, False)[:5]}
     f("case", str(target.get("case_id")))
     a.next = {"P1A20": "Have the battery coolant pump inspected before the next fast charge.",
               "P1B05": "Have the 12 V battery and parked-mode power consumers checked (something drains it overnight).",
@@ -476,6 +488,8 @@ def segment_compare(ctx: Ctx, q: str, plan: dict) -> Answer:
              f"({r1(ac_city)} kWh/100 km in the city vs {r1(ac_hwy)} on the highway) because you spend longer per km."]
     a.proof = [("city", f"{r1(c)} kWh/100 km"), ("highway", f"{r1(h)} kWh/100 km"), ("distance", f"{round(cd)} + {round(hd)} km")]
     f("advice_kmh", 10, "km/h", "eco-driving guidance")
+    a.chart = {"type": "bar", "title": "Energy per 100 km", "unit": "kWh/100 km", "labels": ["city", "highway"],
+               "values": [r1(c), r1(h)]}
     a.next = "On the highway, cruising about 10 km/h slower is the biggest single saving."
     a.evidence.append(f"trips table: city/highway energy split per trip, {len(trips)} trips")
     return a
@@ -539,6 +553,8 @@ def signal_trend(ctx: Ctx, q: str, plan: dict) -> Answer:
     slope = np.polyfit(np.arange(len(daily)), daily, 1)[0] * 7 if len(daily) > 2 else 0.0
     f("max", r1(r["max"][i])); f("max_t", fmt_time(r["minute"][i] * 60)); f("min", r1(r["min"][j]))
     f("mean", r1(np.mean(r["mean"]))); f("slope", r2(slope)); f("w", w.fmt())
+    a.chart = {"type": "line", "title": f"{label} - daily average", "unit": unit,
+               "labels": [fmt_date(w.start + d * 86400)[4:] for d in np.unique(days)], "values": [r1(x) for x in daily]}
     trend = "stable" if abs(slope) < 0.05 * max(abs(np.mean(daily)), 1e-6) / 4 else ("rising" if slope > 0 else "falling")
     a.what = (f"{label.capitalize()} {phrase(w)}: average {r1(np.mean(r['mean']))} {unit}, highest "
               f"{r1(r['max'][i])} {unit} on {fmt_time(r['minute'][i] * 60)}, lowest {r1(r['min'][j])} {unit}.")

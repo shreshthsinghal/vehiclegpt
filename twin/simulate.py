@@ -107,6 +107,7 @@ def simulate_trip(trip: W.PlannedTrip, state: CarState, seed: int, heat: bool = 
         first_derate = t[np.argmax(temp_max >= 50.0)]
         events += [
             {"t": first_derate, "type": "dtc", "code": "P1A21", "ecu": "BMS", "status": 0x2F},
+            {"t": t[-1], "type": "dtc", "code": "P1A21", "ecu": "BMS", "status": 0x28},
             {"t": first_derate, "type": "warning", "code": "REDUCED_POWER", "duration": 600},
             {"t": t0, "type": "warning", "code": "BATTERY_TEMP_HIGH", "duration": 600},
             {"t": first_derate, "type": "log", "proc": "bms_mon", "sev": 3,
@@ -161,6 +162,13 @@ def simulate_trip(trip: W.PlannedTrip, state: CarState, seed: int, heat: bool = 
             events += [{"t": t[0], "type": "dtc", "code": "P1B05", "ecu": "BCM", "status": 0x2F},
                        {"t": t[0], "type": "warning", "code": "LOW_12V_BATTERY", "duration": 60}]
 
+    # ---- DTCs clearing ("test passed") after the problem is gone
+    if state.tpms_dtc_logged and not getattr(state, "tpms_passed", False) and tyres[0, 2] > 230:
+        state.tpms_passed = True
+        events.append({"t": t[0] + 2, "type": "dtc", "code": "C1A10", "ecu": "TPMS", "status": 0x28})
+    if state.lv_dtc_logged and not getattr(state, "lv_passed", False) and first_start and rest_v > 12.4:
+        state.lv_passed = True
+        events.append({"t": t[0] + 2, "type": "dtc", "code": "P1B05", "ecu": "BCM", "status": 0x28})
     # ---- tyres: TPMS warning + DTC (S02)
     low = tyres[:, 2] < W.TPMS_WARN_KPA
     if low.any():

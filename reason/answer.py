@@ -44,6 +44,7 @@ class Answer:
     verified: bool = False
     unverified: list[str] = field(default_factory=list)
     confidence: str = "high"
+    chart: dict | None = None                                         # {"type": "bar"|"line", ...} for the HMI
 
     # ---------------------------------------------------------------- facts
     def fact(self, name, value, unit="", source=""):
@@ -69,8 +70,9 @@ class Answer:
         return {"question": self.question, "intent": self.intent, "path": self.path, "what": self.what,
                 "why": self.why, "proof": [{"label": a, "value": b} for a, b in self.proof], "next": self.next,
                 "details": self.details, "evidence": self.evidence, "verified": self.verified,
-                "unverified": self.unverified, "confidence": self.confidence, "plan": self.plan,
-                "timings_ms": self.timings_ms}
+                "unverified": self.unverified, "confidence": self.confidence,
+                "plan": {k: v for k, v in self.plan.items() if k != "window_override"},
+                "timings_ms": self.timings_ms, "chart": self.chart}
 
 
 # ==================================================================== verifier

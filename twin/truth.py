@@ -106,7 +106,8 @@ def build_truth(trips_meta, charges, events, days) -> dict:
     disen = [e for e in events if e["type"] == "adas" and e["event"] == "LKA_DISENGAGED"]
     s03 = [{"time": _loc(e["t"]), "reason": e["reason"], "speed_kmh": round(e["speed"], 1),
             "lane_confidence": round(e["conf"])} for e in disen if e["day"] == 55]
-    s05_ev = sorted([e for e in events if e["day"] == W.OVERHEAT_DAY and e["type"] in ("dtc", "warning", "log")],
+    s05_ev = sorted([e for e in events if e["day"] == W.OVERHEAT_DAY and e["type"] in ("dtc", "warning", "log")
+                     and e.get("status", 0x2F) == 0x2F],
                     key=lambda e: e["t"])
     dc = [c for c in charges if c["kind"] == "dc_charge"]
     city_t = [t for t in trips_meta]

@@ -7,5 +7,6 @@ pyyaml>=6.0
 drain3>=0.9.11       # log template mining (SENSE)
 cryptography>=42    # AES-256-GCM encryption at rest (REMEMBER)
 sqlite-vec>=0.1.6   # vector search table
-psutil>=5.9         # memory measurement on Windows
+psutil>=5.9         # memory + connection counters
+asammdf>=8.0        # MDF4 export for service engineers (ASK)
 pytest>=8.0

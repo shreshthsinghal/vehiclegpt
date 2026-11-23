@@ -79,5 +79,19 @@ python -m remember.build      # SENSE -> data/store/vehicle.db (+ encrypted case
 Plus trips, charges, events, logs (FTS5 keyword search), DTC descriptions. Time-series blocks and case files are
 AES-256-GCM encrypted (key file stands in for the vehicle HSM). Total on disk: ~36 MB for 8 weeks.
 
+## Phase 4: REASON (router, playbooks, verifier, on-device SLM planner)
+```
+python -m reason.ask                       # ask questions in the terminal
+python -m eval.run_golden                  # grade against the answer key
+python scripts/get_model.py                # optional: download Qwen3-0.6B (one time) ...
+python scripts/start_llm.py                # ... and run llama-server on 127.0.0.1 for the SMART path
+```
+
+## Phase 5: ASK (offline HMI for driver, service, fleet, validation)
+```
+python -m ask.server                       # open http://127.0.0.1:8765 ; role PINs are printed at start-up
+```
+![driver](docs/screens/driver_range.png)
+
 ## Status
-Phase 3 (REMEMBER) complete. Tests: `python -m pytest -q` (13 tests, ~4 min).
+Phase 5 (ASK) complete. Tests: `python -m pytest -q` (22 tests, ~3 min).

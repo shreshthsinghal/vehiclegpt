@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VehicleGPT</title>
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #121821; --panel2: #18202b; --line: #243042; --text: #e8eef5; --muted: #8b9bb0;
+    --accent: #3dd6c6; --accent2: #7aa7ff; --warn: #ffb020; --crit: #ff5d5d; --ok: #46d07c;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+  header { display: flex; align-items: center; gap: 18px; padding: 12px 22px; border-bottom: 1px solid var(--line);
+           background: linear-gradient(180deg, #0f1620, #0b0f14); position: sticky; top: 0; z-index: 5; flex-wrap: wrap; }
+  .brand { font-weight: 800; font-size: 22px; letter-spacing: .3px; }
+  .brand span { color: var(--accent); }
+  .clock { color: var(--muted); font-size: 13px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .chip { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; font-size: 13px;
+          white-space: nowrap; }
+  .chip b { font-weight: 700; }
+  .chip.good { border-color: #1f5f45; color: #9ff0c4; }
+  .chip.warn { border-color: #6b4a10; color: #ffd27a; }
+  .chip.crit { border-color: #6b1f1f; color: #ffb0b0; }
+  nav { display: flex; gap: 6px; padding: 10px 22px 0; }
+  nav button { background: transparent; color: var(--muted); border: 1px solid transparent; border-bottom: none;
+               padding: 10px 18px; font-size: 15px; border-radius: 10px 10px 0 0; cursor: pointer; }
+  nav button.active { color: var(--text); background: var(--panel); border-color: var(--line); }
+  nav button .lock { font-size: 11px; color: var(--muted); margin-left: 6px; }
+  main { padding: 0 22px 40px; }
+  section { display: none; background: var(--panel); border: 1px solid var(--line); border-radius: 0 12px 12px 12px; padding: 22px; }
+  section.active { display: block; }
+  .askrow { display: flex; gap: 10px; }
+  .askrow input { flex: 1; font-size: 20px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line);
+                  background: var(--bg); color: var(--text); outline: none; }
+  .askrow input:focus { border-color: var(--accent); }
+  .btn { background: var(--accent); color: #04211e; border: none; border-radius: 12px; padding: 0 22px; font-size: 16px;
+         font-weight: 700; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 500; padding: 8px 14px; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .quick { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 18px; }
+  .quick button { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 999px;
+                  padding: 7px 13px; font-size: 13px; cursor: pointer; }
+  .quick button:hover { border-color: var(--accent); }
+  .card { background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; }
+  .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; font-size: 12px; }
+  .badge { padding: 3px 9px; border-radius: 6px; background: #1c2735; color: var(--muted); }
+  .badge.fast { background: #0f3b37; color: #7ff2e6; } .badge.smart { background: #22305a; color: #a9c4ff; }
+  .badge.ok { background: #123b26; color: #8ef0b5; } .badge.bad { background: #4a1616; color: #ffb3b3; }
+  .what { font-size: 24px; line-height: 1.35; font-weight: 650; }
+  .next { margin-top: 14px; padding: 12px 14px; border-left: 4px solid var(--accent); background: #0f1d22; border-radius: 8px;
+          font-size: 17px; }
+  details { margin-top: 14px; } summary { cursor: pointer; color: var(--accent2); font-size: 14px; }
+  .why li { margin: 8px 0; line-height: 1.45; font-size: 16px; }
+  .proof { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .proof span { background: #0d141c; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+  .proof span i { color: var(--muted); font-style: normal; margin-right: 6px; }
+  .lines { font-family: ui-monospace, Consolas, monospace; font-size: 13px; color: #c7d3e0; line-height: 1.7;
+           background: #0b1118; border-radius: 8px; padding: 10px 12px; overflow-x: auto; }
+  .evidence { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .chart { margin-top: 16px; }
+  .chart h4 { margin: 0 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  svg text { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+  .grid2 { display: grid; grid-template-columns: 260px 1fr; gap: 18px; }
+  .daylist { max-height: 640px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
+  .day { padding: 8px 12px; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 14px; display: flex;
+         justify-content: space-between; }
+  .day:hover, .day.sel { background: var(--panel2); }
+  .dot { display: inline-block; min-width: 20px; text-align: center; border-radius: 999px; background: #4a3410; color: #ffd27a;
+         font-size: 11px; padding: 1px 6px; }
+  .sigs { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  .sev-critical { color: var(--crit); } .sev-warning { color: var(--warn); }
+  .linkbtn { background: none; border: none; color: var(--accent2); cursor: pointer; padding: 0; font-size: 13px; }
+  .untrusted { color: var(--muted); font-size: 11px; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 10; }
+  .modal.open { display: flex; }
+  .modal .box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; width: min(1000px, 94vw);
+                max-height: 90vh; overflow-y: auto; }
+  .pin input { font-size: 22px; letter-spacing: 6px; width: 140px; padding: 8px 12px; background: var(--bg); color: var(--text);
+               border: 1px solid var(--line); border-radius: 8px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .stat { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .stat .v { font-size: 26px; font-weight: 750; } .stat .l { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent);
+             border-radius: 50%; animation: s 0.8s linear infinite; vertical-align: middle; }
+  @keyframes s { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Vehicle<span>GPT</span></div>
+  <div class="clock" id="clock">vehicle clock: -</div>
+  <div class="chips" id="chips"></div>
+</header>
+<nav>
+  <button data-tab="driver" class="active">Driver</button>
+  <button data-tab="service">Service<span class="lock">PIN</span></button>
+  <button data-tab="fleet">Fleet<span class="lock">PIN</span></button>
+  <button data-tab="validation">Validation<span class="lock">PIN</span></button>
+</nav>
+<main>
+  <!-- ================= DRIVER ================= -->
+  <section id="driver" class="active">
+    <div class="askrow">
+      <input id="q" placeholder="Ask about your car, e.g. Why has my range dropped?" autocomplete="off">
+      <button class="btn" id="askbtn">Ask</button>
+    </div>
+    <div class="quick" id="quick"></div>
+    <div id="answer"></div>
+  </section>
+
+  <!-- ================= SERVICE ================= -->
+  <section id="service">
+    <div class="grid2">
+      <div>
+        <div class="muted small" style="margin-bottom:6px">Days with driving (badge = events)</div>
+        <div class="daylist" id="days"></div>
+      </div>
+      <div>
+        <div class="sigs" id="sigs"></div>
+        <div id="dayview" class="muted">Pick a day.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FLEET ================= -->
+  <section id="fleet">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
+      <span class="muted">Week ending</span><input type="date" id="weekend" style="background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px">
+      <button class="btn ghost" id="fleetbtn">Show digest</button>
+      <button class="btn ghost" id="fleetsave">Save digest (local JSON)</button>
+    </div>
+    <div id="fleetview"></div>
+  </section>
+
+  <!-- ================= VALIDATION ================= -->
+  <section id="validation">
+    <p class="muted">Runs the golden exam (questions from the case study, paraphrases, long-tail and safety questions) against
+      the answer key computed by the digital twin. Takes a few seconds.</p>
+    <button class="btn ghost" id="valbtn">Run golden exam</button>
+    <div id="valview" style="margin-top:14px"></div>
+  </section>
+</main>
+
+<div class="modal" id="pinmodal"><div class="box pin" style="width:360px">
+  <h3 style="margin-top:0">Enter <span id="pinrole"></span> PIN</h3>
+  <p class="muted small">Role-based access: printed in the server window at start-up.</p>
+  <input id="pin" type="password" inputmode="numeric" maxlength="4"> <button class="btn" id="pinok" style="padding:10px 18px">Open</button>
+  <div id="pinmsg" class="muted small" style="margin-top:8px"></div>
+</div></div>
+<div class="modal" id="casemodal"><div class="box" id="casebox"></div></div>
+
+<script>
+const QUICK = ["Why has my driving range reduced over the last two weeks?", "When did fuel efficiency show the largest drop?",
+  "Show all ADAS disengagement events from yesterday.", "What happened before the battery overheating warning?",
+  "Compare energy consumption between city and highway driving.", "Which fault codes are active?", "Unlock the doors."];
+const creds = {driver: ""};
+let pendingTab = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+async function api(path, role, opts = {}) {
+  const h = {"Content-Type": "application/json"};
+  if (role) { h["X-Role"] = role; h["X-Pin"] = creds[role] || ""; }
+  const r = await fetch(path, {...opts, headers: h});
+  if (r.status === 403) throw new Error("forbidden");
+  return opts.raw ? r : r.json();
+}
+
+/* ---------------- charts (inline SVG, no libraries) ---------------- */
+function bars(c) {
+  const W = 520, H = 170, pad = 30, n = c.values.length, max = Math.max(...c.values.map(Math.abs), 0.001);
+  const bw = (W - pad * 2) / n * 0.6, zero = c.values.some(v => v < 0) ? H / 2 : H - 26;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px">`;
+  c.values.forEach((v, i) => {
+    const x = pad + i * (W - pad * 2) / n + bw * 0.33, h = Math.abs(v) / max * (zero - 18);
+    const y = v >= 0 ? zero - h : zero;
+    s += `<rect x="${x}" y="${y}" width="${bw}" height="${Math.max(h, 1)}" rx="4" fill="${v >= 0 ? "#3dd6c6" : "#7aa7ff"}"/>`;
+    s += `<text x="${x + bw / 2}" y="${v >= 0 ? y - 5 : y + h + 13}" text-anchor="middle" style="fill:#e8eef5">${v}</text>`;
+    s += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${esc(c.labels[i])}</text>`;
+  });
+  return s + `<line x1="${pad}" x2="${W - pad}" y1="${zero}" y2="${zero}" stroke="#243042"/></svg>`;
+}
+function line(xs, ys, o = {}) {
+  const W = o.w || 760, H = o.h || 150, L = 44, R = 10, T = 10, B = 22;
+  const pts = ys.map((y, i) => [i, y]).filter(p => p[1] !== null && !isNaN(p[1]));
+  if (!pts.length) return "<div class='muted small'>no data</div>";
+  let lo = Math.min(...pts.map(p => p[1])), hi = Math.max(...pts.map(p => p[1]));
+  if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
+  const tn = o.t;                                   // real timestamps: x proportional to time, gaps left empty
+  const X = tn ? (i => L + (tn[i] - tn[0]) / Math.max(tn[tn.length - 1] - tn[0], 1) * (W - L - R))
+               : (i => L + i / Math.max(ys.length - 1, 1) * (W - L - R));
+  const Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+  if (o.highlight) s += `<rect x="${X(o.highlight[0])}" y="${T}" width="${Math.max(X(o.highlight[1]) - X(o.highlight[0]), 3)}" height="${H - T - B}" fill="#3a2a0a"/>`;
+  (o.markers || []).forEach(m => { s += `<line x1="${X(m.i)}" x2="${X(m.i)}" y1="${T}" y2="${H - B}" stroke="${m.color || "#ffb020"}" stroke-dasharray="3 3"/>`; });
+  const segs = [[]];
+  pts.forEach((p, k) => { if (tn && k && tn[p[0]] - tn[pts[k - 1][0]] > 180) segs.push([]); segs[segs.length - 1].push(p); });
+  segs.forEach(sg => { s += `<polyline fill="none" stroke="${o.color || "#3dd6c6"}" stroke-width="1.8" points="${sg.map(p => X(p[0]) + "," + Y(p[1])).join(" ")}"/>`; });
+  s += `<text x="4" y="${T + 9}">${+hi.toFixed(1)}</text><text x="4" y="${H - B}">${+lo.toFixed(1)}</text>`;
+  const n = xs.length, ticks = Math.min(7, n);
+  if (tn) {
+    for (let k = 0; k < ticks; k++) { const t = tn[0] + k * (tn[n - 1] - tn[0]) / Math.max(ticks - 1, 1), i = tn.findIndex(x => x >= t);
+      const lab = new Date(t * 1000).toLocaleTimeString("en-GB", {timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit"});
+      s += `<text x="${L + k * (W - L - R) / Math.max(ticks - 1, 1)}" y="${H - 6}" text-anchor="middle">${lab}</text>`; }
+  } else
+  for (let k = 0; k < ticks; k++) { const i = Math.round(k * (n - 1) / Math.max(ticks - 1, 1)); s += `<text x="${X(i)}" y="${H - 6}" text-anchor="middle">${esc(xs[i])}</text>`; }
+  return s + `</svg>`;
+}
+function chartHtml(c) {
+  if (!c) return "";
+  let body = c.type === "bar" ? bars(c) : line(c.labels, c.values, {highlight: c.highlight,
+              markers: c.marker ? [{i: c.labels.indexOf(c.marker)}].filter(m => m.i >= 0) : []});
+  return `<div class="chart"><h4>${esc(c.title)} (${esc(c.unit)})</h4>${body}</div>`;
+}
+
+/* ---------------- status strip ---------------- */
+async function status() {
+  try {
+    const s = await api("/api/status");
+    $("#clock").textContent = "vehicle clock: " + s.vehicle_clock + " (recorded data)";
+    const chips = [
+      `<span class="chip">charge <b>${s.soc ?? "-"}%</b></span>`, `<span class="chip">range <b>${s.range_km ?? "-"} km</b></span>`,
+      `<span class="chip">battery <b>${s.battery_temp ?? "-"} °C</b></span>`,
+      s.warnings.length ? `<span class="chip crit">warning: ${esc(s.warnings.join(", "))}</span>` : `<span class="chip good">no warnings</span>`,
+      s.active_dtcs.length ? `<span class="chip warn">DTC ${esc(s.active_dtcs.join(" "))}</span>` : "",
+      `<span class="chip ${s.model_on ? "good" : ""}">language model ${s.model_on ? "ON" : "off"}</span>`,
+      `<span class="chip good" title="CAN transmit attempts by VehicleGPT">CAN TX <b>${s.can_tx_attempts}</b></span>`,
+      `<span class="chip ${s.external_connections === 0 ? "good" : "warn"}" title="non-loopback network connections of this process">external connections <b>${s.external_connections ?? "?"}</b></span>`,
+      s.process_rss_mb ? `<span class="chip">RAM <b>${s.process_rss_mb} MB</b></span>` : ""];
+    $("#chips").innerHTML = chips.join("");
+  } catch (e) { $("#chips").innerHTML = `<span class="chip crit">server offline</span>`; }
+}
+
+/* ---------------- driver ---------------- */
+function speak(a) {
+  if (!("speechSynthesis" in window)) return;
+  const local = speechSynthesis.getVoices().filter(v => v.localService && v.lang.startsWith("en"));
+  if (!local.length) { alert("No offline voice installed on this computer."); return; }
+  const u = new SpeechSynthesisUtterance(a.what + " " + (a.next || ""));
+  u.voice = local[0]; speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+function renderAnswer(a) {
+  const path = a.path.startsWith("SMART") ? "smart" : "fast";
+  const meta = `<div class="meta"><span class="badge ${path}">${esc(a.path)} path</span>
+    <span class="badge">${esc(a.intent.replaceAll("_", " "))}</span><span class="badge">${(a.timings_ms.total || 0).toFixed(0)} ms</span>
+    <span class="badge ${a.verified ? "ok" : "bad"}">${a.verified ? "✓ every number verified" : "unverified: " + esc(a.unverified.join(" "))}</span>
+    ${a.confidence !== "high" ? `<span class="badge">confidence ${esc(a.confidence)}</span>` : ""}
+    <button class="btn ghost" style="padding:2px 10px;font-size:12px" id="speak">🔊 read aloud (offline voice)</button></div>`;
+  let h = `<div class="card">${meta}<div class="what">${esc(a.what)}</div>`;
+  if (a.next) h += `<div class="next">${esc(a.next)}</div>`;
+  if (a.why.length || a.proof.length || a.chart || a.details.length) {
+    h += `<details ${a.chart ? "open" : ""}><summary>Why, and the evidence</summary>`;
+    if (a.why.length) h += `<ul class="why">${a.why.map(w => `<li>${esc(w)}</li>`).join("")}</ul>`;
+    if (a.proof.length) h += `<div class="proof">${a.proof.map(p => `<span><i>${esc(p.label)}</i>${esc(p.value)}</span>`).join("")}</div>`;
+    h += chartHtml(a.chart);
+    if (a.details.length) h += `<div class="lines" style="margin-top:12px">${a.details.map(esc).join("<br>")}</div>`;
+    if (a.evidence.length) h += `<div class="evidence">Sources: ${a.evidence.map(esc).join(" · ")}</div>`;
+    if (a.path.startsWith("SMART")) h += `<div class="evidence">Plan written by the on-device language model: ${esc(JSON.stringify(a.plan))}</div>`;
+    h += `</details>`;
+  }
+  $("#answer").innerHTML = h + `</div>`;
+  $("#speak").onclick = () => speak(a);
+}
+async function ask(q) {
+  if (!q.trim()) return;
+  $("#q").value = q; $("#askbtn").disabled = true;
+  $("#answer").innerHTML = `<div class="card"><span class="spinner"></span> thinking on-device…</div>`;
+  try { renderAnswer(await api("/api/ask", null, {method: "POST", body: JSON.stringify({question: q})})); }
+  catch (e) { $("#answer").innerHTML = `<div class="card">Error: ${esc(e.message)}</div>`; }
+  $("#askbtn").disabled = false;
+}
+
+/* ---------------- tabs + PIN ---------------- */
+function openTab(t) {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === t));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("active", s.id === t));
+  if (t === "service" && !$("#days").innerHTML) loadDays();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  const t = b.dataset.tab;
+  if (t === "driver" || creds[t] !== undefined) return openTab(t);
+  pendingTab = t; $("#pinrole").textContent = t; $("#pin").value = ""; $("#pinmsg").textContent = "";
+  $("#pinmodal").classList.add("open"); $("#pin").focus();
+});
+$("#pinok").onclick = async () => {
+  const r = await fetch("/api/login", {method: "POST", body: JSON.stringify({role: pendingTab, pin: $("#pin").value})});
+  if (r.ok) { creds[pendingTab] = $("#pin").value; $("#pinmodal").classList.remove("open"); openTab(pendingTab); }
+  else $("#pinmsg").textContent = "Wrong PIN.";
+};
+$("#pin").onkeydown = e => { if (e.key === "Enter") $("#pinok").click(); };
+document.querySelectorAll(".modal").forEach(m => m.onclick = e => { if (e.target === m) m.classList.remove("open"); });
+
+/* ---------------- service ---------------- */
+const DEFAULT_SIGS = ["speed", "battery_temp", "state_of_charge", "coolant_pump"];
+let SIGS = {}, selected = new Set(DEFAULT_SIGS), currentDay = null;
+async function loadDays() {
+  SIGS = await api("/api/signals");
+  $("#sigs").innerHTML = Object.entries(SIGS).map(([k, v]) =>
+    `<label><input type="checkbox" value="${k}" ${selected.has(k) ? "checked" : ""}> ${esc(v[0])}</label>`).join("");
+  $("#sigs").querySelectorAll("input").forEach(c => c.onchange = () => { c.checked ? selected.add(c.value) : selected.delete(c.value); if (currentDay) loadDay(currentDay); });
+  const days = await api("/api/days", "service");
+  $("#days").innerHTML = days.reverse().map(d => `<div class="day" data-d="${d.date}"><span>${d.date.slice(5)} · ${d.trips} trips · ${d.km} km</span>${d.events ? `<span class="dot">${d.events}</span>` : ""}</div>`).join("");
+  $("#days").querySelectorAll(".day").forEach(el => el.onclick = () => loadDay(el.dataset.d));
+}
+async function loadDay(d) {
+  currentDay = d;
+  $("#days").querySelectorAll(".day").forEach(el => el.classList.toggle("sel", el.dataset.d === d));
+  $("#dayview").innerHTML = `<span class="spinner"></span>`;
+  const r = await api(`/api/day?date=${d}&signals=${[...selected].join(",")}`, "service");
+  let h = `<div class="muted small">${esc(r.date)} · source tier: ${esc(r.tier)}</div>`;
+  for (const [k, s] of Object.entries(r.series)) {
+    const xs = s.t.map(t => new Date(t * 1000).toLocaleTimeString("en-GB", {timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit"}));
+    const marks = r.events.map(e => ({i: s.t.findIndex(t => t >= e.t), color: e.severity === "critical" ? "#ff5d5d" : "#ffb020"})).filter(m => m.i >= 0);
+    h += `<div class="chart"><h4>${esc(s.label)} (${esc(s.unit)})</h4>${line(xs, s.v, {markers: marks, h: 120, t: s.t})}</div>`;
+  }
+  h += `<h4 style="margin:18px 0 4px">Events</h4>`;
+  h += r.events.length ? `<table><tr><th>time</th><th>type</th><th>what</th><th>detail</th><th>black box</th></tr>${r.events.map(e =>
+      `<tr class="sev-${e.severity}"><td>${e.time}</td><td>${esc(e.type)}</td><td>${esc(e.what)}</td><td class="small">${esc(Object.entries(e.detail).map(([k, v]) => k + " " + (typeof v === "number" ? +v.toFixed(1) : v)).join(", "))}</td>
+      <td>${e.case_id ? `<button class="linkbtn" data-case="${e.case_id}">open</button>` : ""}</td></tr>`).join("")}</table>` : `<div class="muted small">No events.</div>`;
+  h += `<h4 style="margin:18px 0 4px">Trips & charging</h4><table><tr><th>start</th><th>end</th><th>km</th><th>kWh/100 km</th><th>data coverage</th></tr>${r.trips.map(t =>
+      `<tr><td>${t.start}</td><td>${t.end}</td><td>${t.km}</td><td>${t.kwh_100km ?? "-"}</td><td>${t.coverage}%</td></tr>`).join("")}${r.charges.map(c =>
+      `<tr><td>${c.start}</td><td colspan="4">${esc(c.charger)} charge, ${c.kwh} kWh, battery peak ${c.tmax} °C</td></tr>`).join("")}</table>`;
+  if (r.logs.length) h += `<h4 style="margin:18px 0 4px">System log (warnings) <span class="untrusted">untrusted text: shown to people, never given to the language model</span></h4>
+      <div class="lines">${r.logs.map(l => `${l.time} [${esc(l.proc)}] ${esc(l.msg)}`).join("<br>")}</div>`;
+  $("#dayview").innerHTML = h;
+  $("#dayview").querySelectorAll("[data-case]").forEach(b => b.onclick = () => openCase(b.dataset.case));
+}
+async function openCase(id) {
+  $("#casebox").innerHTML = `<span class="spinner"></span>`; $("#casemodal").classList.add("open");
+  const c = await api(`/api/case?id=${encodeURIComponent(id)}`, "service");
+  const xs = c.t.map(t => new Date(t * 1000).toLocaleTimeString("en-GB", {timeZone: "Asia/Kolkata"}));
+  const trig = xs.findIndex((_, i) => c.t[i] >= c.t[0] + 60);
+  let h = `<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Black box ${esc(c.id)}</h3>
+    <button class="btn ghost" id="mdf">Export MDF4</button></div>
+    <p class="muted small">Window ${esc(c.window.join(" → "))} (−60 s / +10 s) · ${c.n_signals_recorded} signals recorded · triggers: ${esc(c.triggers.map(t => t.type + " " + (t.code || t.kind || t.reason || "")).join(", "))}</p>`;
+  for (const [k, v] of Object.entries(c.signals)) {
+    h += `<div class="chart"><h4>${esc(c.labels[k][0])} (${esc(c.labels[k][1])})</h4>${line(xs, v, {h: 100, markers: [{i: trig, color: "#ff5d5d"}]})}</div>`;
+  }
+  if (c.logs.length) h += `<h4>Logs in window <span class="untrusted">untrusted text</span></h4><div class="lines">${c.logs.map(l => esc(l.proc + ": " + l.msg)).join("<br>")}</div>`;
+  $("#casebox").innerHTML = h;
+  $("#mdf").onclick = async () => {
+    const r = await api(`/api/export?case=${encodeURIComponent(id)}`, "service", {raw: true});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(await r.blob()); a.download = id + ".mf4"; a.click();
+  };
+}
+
+/* ---------------- fleet ---------------- */
+let lastDigest = null;
+$("#fleetbtn").onclick = async () => {
+  const d = await api(`/api/fleet${$("#weekend").value ? "?week_end=" + $("#weekend").value : ""}`, "fleet");
+  lastDigest = d;
+  const ev = Object.entries(d.event_counts).map(([k, v]) => `${k.replaceAll("_", " ").toLowerCase()}: ${v}`).join(" · ") || "none";
+  $("#fleetview").innerHTML = `<p class="muted">Week ${esc(d.week)} · ${esc(d.contains)}</p><div class="stats">
+    ${[["trips", d.trips], ["km", d.km], ["kWh used", d.energy_kwh], ["kWh/100 km", d.kwh_per_100km], ["charges", d.charges],
+       ["DC fast charges", d.dc_fast_charges], ["data coverage %", d.data_coverage_pct], ["fault codes", d.dtcs.join(" ") || "none"]]
+       .map(([l, v]) => `<div class="stat"><div class="v">${esc(v)}</div><div class="l">${l}</div></div>`).join("")}</div>
+    <p class="small" style="margin-top:14px">Events: ${esc(ev)}</p>
+    <p class="small ${d.sharing_opt_in ? "" : "muted"}">Sharing with the fleet operator: <b>${d.sharing_opt_in ? "ON (owner opted in)" : "OFF"}</b>. VehicleGPT itself never transmits; an opted-in owner can hand this file over.</p>`;
+};
+$("#fleetsave").onclick = () => {
+  if (!lastDigest) return;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(lastDigest, null, 2)], {type: "application/json"}));
+  a.download = "vehiclegpt_weekly_digest.json"; a.click();
+};
+
+/* ---------------- validation ---------------- */
+$("#valbtn").onclick = async () => {
+  $("#valview").innerHTML = `<span class="spinner"></span> running…`;
+  const s = await api("/api/validation", "validation");
+  $("#valview").innerHTML = `<div class="stats">${Object.entries(s).filter(([k, v]) => typeof v !== "object").map(([k, v]) =>
+      `<div class="stat"><div class="v">${esc(v)}</div><div class="l">${esc(k.replaceAll("_", " "))}</div></div>`).join("")}
+      <div class="stat"><div class="v">${s.brief_latency_ms.p95} ms</div><div class="l">brief latency p95 (FAST path)</div></div></div>`;
+};
+
+/* ---------------- start ---------------- */
+$("#quick").innerHTML = QUICK.map(q => `<button>${esc(q)}</button>`).join("");
+$("#quick").querySelectorAll("button").forEach(b => b.onclick = () => ask(b.textContent));
+$("#askbtn").onclick = () => ask($("#q").value);
+$("#q").onkeydown = e => { if (e.key === "Enter") ask($("#q").value); };
+speechSynthesis && speechSynthesis.getVoices();
+status(); setInterval(status, 10000);
+</script>
+</body>
+</html>
