@@ -1081,8 +1081,9 @@ def _recommend(ctx: Ctx, a: Answer, habits: bool):
     recs = (recs_habit + recs_fix) if habits else (recs_fix + recs_habit)
     a.what = ("Based on 8 weeks of your car's data, the habits worth changing are:" if habits else
               "Based on your car's current condition, here is what I'd do:")
-    a.why = recs + a.why[:0]
-    a.next = recs[0]
+    a.why = recs
+    a.details = []
+    a.next = "Show this list at your next service visit."
     a.evidence.append("trips, charges, events and COLD-tier braking data over the full history")
 
 

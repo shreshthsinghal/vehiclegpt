@@ -268,6 +268,7 @@ canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-in
   <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></symbol>
   <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></symbol>
   <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
@@ -581,9 +582,9 @@ function render(a, wall){
   const h = u.hero;
   let top;
   if (u.kind === "refuse") top = `<div class="shield">${icon("shield")}</div><div class="what big">${esc(a.what)}</div>`;
-  else if (u.kind === "info") top = `<div class="shield info">${icon("dot")}</div><div class="what big">${esc(a.what)}</div>${(a.why || []).map(w => `<div class="what">${esc(w)}</div>`).join("")}`;
+  else if (u.kind === "info") top = `<div class="shield info">${icon("info")}</div><div class="what big">${esc(a.what)}</div>${(a.why || []).map(w => `<div class="what">${esc(w)}</div>`).join("")}`;
   else if (h) top = `<div class="hero"><span class="gl">Driving · full details when parked</span></div><div class="hero"><span class="v">${esc(h.value)}</span>${h.unit ? `<span class="u">${esc(h.unit)}</span>` : ""}<span class="l">${esc(h.label)}</span></div><div class="what">${esc(a.what)}</div>`;
-  else top = `<div class="what big">${esc(a.what)}</div>` + ((a.details || []).length ? `<div class="what">${a.details.slice(0,5).map(esc).join("<br>")}</div>` : "");
+  else top = `<div class="what big">${esc(a.what)}</div>` + ((a.details || []).length && !(u.cards || []).length ? `<div class="what">${a.details.slice(0,5).map(esc).join("<br>")}</div>` : "");
   const cards = (u.cards || []).map(c => {
     const lvl = c.bars != null && c.bars > 0;
     const val = lvl ? `${bars(c.bars)}<span class="hi">${esc(c.value)}</span>` : esc(c.value);

@@ -148,7 +148,12 @@ def build(ans) -> dict:
                   {"icon": "dot", "name": "Sessions", "value": _num(f["nsel"]), "sub": f"{_num(f['min_min'])}–{_num(f['max_min'])} min"}]
         say = first
     elif i == "charging_history" and "kwh" in f:
-        hero = {"value": _num(f["kwh"]), "unit": "kWh", "label": "charged into the battery"}
+        if re.search(r"fast|\bdc\b", ans.question.lower()):
+            hero = {"value": _num(f["ndc"]), "unit": "", "label": "DC fast charges"}
+        elif re.search(r"how (often|many)|frequen", ans.question.lower()):
+            hero = {"value": _num(f["n"]), "unit": "", "label": "charging sessions"}
+        else:
+            hero = {"value": _num(f["kwh"]), "unit": "kWh", "label": "charged into the battery"}
         cards += [{"icon": "dot", "name": "Sessions", "value": _num(f["n"])},
                   {"icon": "spark", "name": "DC fast charges", "value": _num(f["ndc"])},
                   {"icon": "battery", "name": "Home AC charges", "value": _num(f["nac"])}]
@@ -158,8 +163,19 @@ def build(ans) -> dict:
     elif i == "health_summary" and a_recs(ans):
         for w in ans.why[:4]:
             head, _, rest = w.partition(":")
-            cards.append({"icon": "bulb" if "habit" in ans.what else "warn", "name": head[:40], "value": rest.strip()[:90] or w[:90], "small": True})
+            if rest and len(head) <= 22:
+                name, val = head, rest.strip()
+            else:
+                name, val = ("Habit" if "habit" in ans.what else "Advice"), w
+            icon = "warn" if name == "Repair" else ("check" if name.startswith("No upgrade") else "bulb")
+            cards.append({"icon": icon, "name": name, "value": val[:110], "small": True,
+                          "tone": "warn" if name == "Repair" else ("ok" if icon == "check" else "")})
         say = ans.what + " " + ans.why[0]
+    elif i == "signal_trend" and "min_on" in f:
+        hero = {"value": _num(f["days_on"]), "unit": "days", "label": "with the wipers on"}
+        cards += [{"icon": "dot", "name": "Minutes wiping", "value": _num(f["min_on"])},
+                  {"icon": "dot", "name": "Steady rain (low/high)", "value": f"{_num(f['min_heavy'])} min"}]
+        say = first
     elif i == "not_recorded":
         say = first
     elif i == "trip_stats" and "km" in f:
@@ -181,7 +197,10 @@ def build(ans) -> dict:
     if not cards:
         for p in ans.proof[:4]:
             cards.append({"icon": "dot", "name": p[0], "value": str(p[1])})
-    out = {"hero": hero, "cards": cards, "say": say or first, "follow": FOLLOW.get(i, DEFAULT_FOLLOW),
+    follow = FOLLOW.get(i, DEFAULT_FOLLOW)
+    if "min_on" in f:
+        follow = ["Was there any problem during rain?", "Why did lane assist switch off?", "How much range do I have left?"]
+    out = {"hero": hero, "cards": cards, "say": say or first, "follow": follow,
            "kind": "refuse" if i in REFUSE else ("info" if i == "not_recorded" else ("search" if i == "related_records" else "answer"))}
     out["ui_verified"] = ui_verified(out, ans)
     return out
