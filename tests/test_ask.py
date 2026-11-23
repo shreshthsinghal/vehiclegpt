@@ -90,3 +90,33 @@ def test_listen_rejects_non_wav(hmi):
     with pytest.raises(urllib.error.HTTPError) as e:
         urllib.request.urlopen(req, timeout=10)
     assert e.value.code == 400
+
+
+def test_voice_text_is_spoken_friendly():
+    from ask.tts import for_ear, sentences
+    t = for_ear("Efficiency is 17.46 kWh/100 km and P1A20 is active.")
+    assert "kilowatt-hours per hundred kilometres" in t and "is 17 kilo" in t and "P 1 A 2 0" in t
+    assert all(len(c.split()) <= 20 for c in sentences(for_ear("One two three. " * 10)))
+
+
+@pytest.mark.slow
+def test_warm_voice_layer(hmi):
+    """Voice-first screen: every answer carries a warm spoken line whose numbers are registered facts,
+    emergencies speak in the calm style, and the chunk/speak endpoints behave with or without a voice model."""
+    base, _ = hmi
+    def ask(q):
+        req = urllib.request.Request(base + "/api/ask", data=json.dumps({"question": q}).encode())
+        return json.loads(urllib.request.urlopen(req, timeout=60).read())
+    for q in ["What's my tyre pressure right now?", "How is battery health right now?", "Why has my range dropped?"]:
+        u = ask(q)["ui"]
+        assert u["voice"] and u["ui_verified"] and u["voice_style"] == "warm", q
+    e = ask("my brakes failed what do I do")["ui"]
+    assert e["voice_style"] == "calm" and "one one two" in e["voice"]
+    req = urllib.request.Request(base + "/api/chunks", data=json.dumps({"text": "Range is 210 km. Drive gently."}).encode())
+    assert len(json.loads(urllib.request.urlopen(req, timeout=10).read())["chunks"]) == 2
+    req = urllib.request.Request(base + "/api/speak", data=json.dumps({"text": "Hello there."}).encode())
+    try:
+        r = urllib.request.urlopen(req, timeout=60)
+        assert r.read(4) == b"RIFF"
+    except urllib.error.HTTPError as err:
+        assert err.code == 503                                        # no voice model installed: browser falls back

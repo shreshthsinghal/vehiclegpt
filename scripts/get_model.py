@@ -3,6 +3,8 @@
   python scripts/get_model.py
   python scripts/get_model.py --speech        # on-device speech-to-text: whisper.cpp + ggml-base.en (~142 MB)
   python scripts/get_model.py --speech tiny   # smaller, less accurate speech model (~75 MB)
+  python scripts/get_model.py --voice         # warm on-device voice: Kokoro-82M (~355 MB, Apache-2.0)
+  python scripts/get_model.py --voice piper   # lighter on-device voice: Piper en_US-amy (~60 MB)
 The download is the ONLY internet use; afterwards VehicleGPT runs fully offline.
 """
 import json
@@ -85,7 +87,31 @@ def speech():
     return True
 
 
+def voice():
+    """Text-to-speech model + Python package. Afterwards the assistant speaks with no internet."""
+    import subprocess
+    kind = sys.argv[sys.argv.index("--voice") + 1] if len(sys.argv) > sys.argv.index("--voice") + 1 else "kokoro"
+    if kind == "piper":
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "piper-tts>=1.3"])
+        d = OUT / "piper"; d.mkdir(parents=True, exist_ok=True)
+        base = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx"
+        for url in (base, base + ".json"):
+            dest = d / url.rsplit("/", 1)[1]
+            _fetch(url, dest) if not dest.exists() else print(f"already present: {dest}")
+    else:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "kokoro-onnx>=0.4", "soundfile>=0.12"])
+        d = OUT / "kokoro"; d.mkdir(parents=True, exist_ok=True)
+        rel = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/"
+        for name in ("kokoro-v1.0.onnx", "voices-v1.0.bin"):
+            dest = d / name
+            _fetch(rel + name, dest) if not dest.exists() else print(f"already present: {dest}")
+    print("Warm voice is ready after a server restart: python -m ask.server")
+    return True
+
+
 if __name__ == "__main__":
+    if "--voice" in sys.argv:
+        sys.exit(0 if voice() else 1)
     if "--speech" in sys.argv:
         sys.exit(0 if speech() else 1)
     sys.exit(0 if main() else 1)

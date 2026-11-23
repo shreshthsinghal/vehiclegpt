@@ -25,7 +25,7 @@ from reason.engine import VehicleGPT
 from reason.playbooks import SIGNALS, TYRE_COLS, WARN_NAMES
 from remember.build import STORE
 from safety.guards import COUNTERS
-from ask import present, speech
+from ask import present, speech, tts
 import yaml
 DTC_NAMES = yaml.safe_load((Path(__file__).resolve().parents[1] / "sense" / "dtc_dictionary.yaml").read_text())
 
@@ -107,7 +107,7 @@ class App:
                 "warnings": [WARN_NAMES.get(c, c) for c in active], "active_dtcs": sorted(set(dtcs)),
                 "active_dtc_names": {c: names.get(c, c) for c in set(dtcs)},
                 "moving": bool(spd.size and spd[-1] > 2),
-                "stt": speech.available(), **self.counters()}
+                "stt": speech.available(), "tts": tts.available(), **self.counters()}
 
     def ask(self, question: str) -> dict:
         with self.lock:
@@ -302,11 +302,19 @@ def make_handler(app: App):
                     return self._send(200, speech.transcribe(self.rfile.read(n)))
                 except Exception as exc:          # noqa: BLE001
                     return self._send(400, {"error": str(exc), "text": ""})
-            n = min(int(self.headers.get("Content-Length", 0)), 4096)
+            n = min(int(self.headers.get("Content-Length", 0)), 8192)
             try:
                 body = json.loads(self.rfile.read(n) or b"{}")
             except json.JSONDecodeError:
                 return self._send(400, {"error": "bad json"})
+            if u.path == "/api/speak":                        # on-device warm voice, one short sentence per call
+                try:
+                    wav, info = tts.speak(str(body.get("text", ""))[:400], str(body.get("style", "warm")))
+                    return self._send(200, wav, "audio/wav", {"X-TTS": json.dumps(info)})
+                except Exception as exc:          # noqa: BLE001
+                    return self._send(503, {"error": str(exc)})
+            if u.path == "/api/chunks":                       # how the reply will be split for speaking
+                return self._send(200, {"chunks": tts.sentences(tts.for_ear(str(body.get("text", ""))[:1200]))})
             if u.path == "/api/ask":
                 return self._send(200, app.ask(str(body.get("question", ""))))
             if u.path == "/api/login":
@@ -320,8 +328,20 @@ def make_handler(app: App):
 def serve(port: int = PORT, store_path: Path = STORE):
     app = App(store_path)
     srv = ThreadingHTTPServer(("127.0.0.1", port), make_handler(app))
+
+    def _warm():                       # load the voice once and pre-make the phrases said most often
+        if tts.available() == "none":
+            return
+        for phrase, style in (("Okay, I'll talk you through it.", "calm"), ("Stay calm.", "calm"),
+                              ("Sorry, I didn't catch that.", "warm"), ("Happy to help. Drive safe.", "warm"),
+                              ("Good question.", "warm"), ("Sorry, I can't do that.", "warm")):
+            try:
+                tts.speak(phrase, style)
+            except Exception:
+                return
+    threading.Thread(target=_warm, daemon=True).start()
     print(f"VehicleGPT HMI on http://127.0.0.1:{port}  (loopback only; language model: "
-          f"{'ON' if app.vg.planner else 'off'})")
+          f"{'ON' if app.vg.planner else 'off'}; voice: {tts.available()})")
     print(f"PINs  service {app.roles['service']}  fleet {app.roles['fleet']}  validation {app.roles['validation']}"
           f"   (stored in {ROLES_FILE})")
     try:

@@ -2,7 +2,7 @@ name: Voice (on-device speech)
 
 on:
   push:
-    paths: ["ask/**", "eval/voice_eval.py", ".github/workflows/voice.yml"]
+    paths: ["ask/**", "eval/voice_eval.py", "eval/tts_eval.py", ".github/workflows/voice.yml"]
   workflow_dispatch:
 
 jobs:
@@ -65,3 +65,24 @@ jobs:
           print("heard:", t, "| intent:", r["intent"], "| verified:", r["verified"], "| hero:", r["ui"]["hero"])
           assert r["intent"] == "range_drop"
           PY
+
+  warm-voice:
+    name: warm voice (Kokoro-82M) on 2 cores, ARM
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-voice.txt
+      - name: Cache voice model
+        uses: actions/cache@v4
+        with:
+          path: models/kokoro
+          key: kokoro-v1.0
+      - run: python scripts/get_model.py --voice
+      - name: Build vehicle store
+        run: python -m twin.generate > /dev/null && python -m remember.build | tail -3
+      - name: Time to first spoken words, real-time factor, memory (2 cores)
+        run: taskset -c 0,1 python -m eval.tts_eval

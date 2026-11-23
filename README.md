@@ -110,7 +110,7 @@ re-checks every number the screen shows.
 |---|---|
 | Glass panels, teal orb, animations | One offline HTML file (CSS + SVG + canvas): no web fonts, CDNs or images. Decorative motion pauses after 15 s idle (0% CPU); *Eco motion* turns it off. |
 | Voice in | Mic → WAV → `/api/listen` on 127.0.0.1 → **whisper.cpp** (base.en, 142 MB). The model loads only while transcribing; audio goes to a temp file that is deleted after transcription. No cloud speech API. Measured on 2 ARM cores: **12/12 spoken questions gave the same analysis as typed**, 6% word errors, **1.4 s** median, 222 MB peak only while transcribing. |
-| Voice out | Browser speech synthesis restricted to **on-device voices** (`localService`); never a network voice. |
+| Voice out | **Warm on-device voice**: Kokoro-82M (Apache-2.0, voice `af_heart`) served by `/api/speak` on 127.0.0.1, or Piper on very small boards. If no voice model is installed, the browser uses an on-device system voice only (never a network voice). |
 | "What's affecting your range" | Real Shapley-style attribution from the `range_drop` playbook (AC in heat vs stop-start traffic), with tyres and battery ruled out. |
 | Map / music tiles | Drawn placeholders marked *DEMO TILE* (no Google Maps, no real songs or album art). |
 | Driver distraction | *Glance mode while driving*: headline + two cards + voice; full details when parked. |
@@ -119,6 +119,28 @@ re-checks every number the screen shows.
 Turn on voice input once: `python scripts/get_model.py --speech` (Windows downloads whisper.cpp automatically).
 Demo framing: `?bezel=0` removes the dashboard frame, **B** toggles it, `?fresh=1` replays onboarding, and `?q=...` asks directly.
 All 14 states are in `docs/screens/hmi/`.
+
+### Voice-first (no keyboard needed)
+![listening](docs/screens/hmi/35_voice_listening.png)
+
+- **Tap the orb, press Space or V, and just speak.** The mic stops by itself after 1.2 s of silence. The screen shows
+  *You said …* so the driver can see what was heard. The keyboard is hidden behind **Type instead**; it opens by itself
+  only if speech isn't installed or the mic is blocked.
+- **The answer is spoken in a warm, human style** (`present.warm`): "Your tyres look good: all four are between 243 and
+  245 kilopascals." instead of reading out the screen. Units, fault codes and decimals are turned into words a person
+  would say (`tts.for_ear`). Emergencies use a slower, *calm* style and read every step, ending with "call one one two".
+  Every number in the spoken line is checked against the verified facts, exactly like the screen.
+- **Speech starts quickly:** the answer is split into short sentences, the first chunk is kept to a few words, and the
+  next sentence is prepared while the current one plays. Common openers are made at start-up.
+- **Conversation mode** (on by default, toggle in Settings): after answering, the assistant offers one follow-up
+  ("Shall I show your safety log?") and listens for about 6 s. *Yes* runs it, *No / thanks* or silence closes with
+  "Happy to help. Drive safe.", and anything else is treated as a new question. Not used after emergencies.
+- **Barge-in:** tap the orb while it is speaking to interrupt and ask something else.
+
+Turn on the warm voice once: `python scripts/get_model.py --voice` (Kokoro, about 355 MB) or `--voice piper` (about 60 MB).
+Measured here (2 x86 vCPUs, `python -m eval.tts_eval`): first spoken words after **1.6 s median** (2.5 s max), real-time factor
+0.94, 650 MB peak. The screen answer itself appears in under 0.2 s, so the driver reads while the voice starts. CI times
+the same on 2 ARM cores.
 
 ## Present state, scenarios, advice and safety (fix round after user testing, 23 Nov)
 | Ask | What happens |

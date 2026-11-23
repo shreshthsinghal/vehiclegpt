@@ -136,6 +136,12 @@ body.eco #orb .halo{animation:none}
 .askbox input:focus{border-color:rgba(63,227,220,.55)}
 .askbox button{width:46px;height:46px;border-radius:50%;background:var(--teal);color:#061413;display:grid;place-items:center;font-size:19px}
 .micnote{position:absolute;left:0;bottom:58px;font-size:12.5px;color:var(--dim)}
+#panel .askbox{display:none}#panel.kbd .askbox{display:flex}#panel.kbd .kbtn{display:none}
+.kbtn{position:absolute;left:0;bottom:0;display:inline-flex;align-items:center;gap:8px;color:var(--mute);font-size:14px;padding:10px 16px;border-radius:22px;border:1px solid var(--line2)}
+.kbtn svg{font-size:20px}
+.said{color:var(--teal);font-size:11.5px;letter-spacing:.4px;text-transform:uppercase;margin-right:6px}
+.heard{font-size:12.5px;color:var(--teal);letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px;min-height:14px}
+.ready.on{color:var(--teal)}.ready.on button{animation:pulse 1.2s ease-in-out infinite;background:rgba(63,227,220,.25)}
 canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-index:25;pointer-events:none;opacity:0;transition:opacity .4s}
 .s-listen canvas#wave,.s-speak canvas#wave{opacity:1}
 .s-answer canvas#wave{left:990px;top:40px;width:300px;height:170px}
@@ -284,6 +290,7 @@ canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-in
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></symbol>
   <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  <symbol id="i-kbd" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></symbol>
   <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
@@ -354,7 +361,7 @@ canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-in
 
     <div class="tile" id="insight" style="display:none"><div class="ic"><svg class="i"><use href="#i-warn"/></svg></div>
       <div><div class="h">HEADS-UP</div><div class="it"></div></div><button class="chip" data-q="Any fault codes?">Tell me more</button></div>
-    <div id="home-hint">Tap the orb or press <b>Space</b> and ask about your car</div>
+    <div id="home-hint">Tap the orb (or press <b>Space</b>) and just speak</div>
 
     <div id="orb" role="button" aria-label="Ask VehicleGPT" tabindex="0">
       <div class="halo"></div>
@@ -372,13 +379,14 @@ canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-in
         <p id="ls">Ask me about your car.</p>
         <div class="chips" id="topics"></div>
         <div class="micnote" id="micnote"></div>
+        <button class="kbtn" id="kbtn" title="Type instead"><svg class="i"><use href="#i-kbd"/></svg>Type instead</button>
         <form class="askbox" id="askform" autocomplete="off">
           <input id="q" placeholder="Or type your question…" maxlength="300">
           <button type="submit" aria-label="Ask"><svg class="i"><use href="#i-send"/></svg></button>
         </form>
       </div>
       <div class="view v-think">
-        <div class="qbubble"><div class="q" id="tq"></div>
+        <div class="qbubble"><div class="heard" id="heard"></div><div class="q" id="tq"></div>
           <div class="steps">
             <span class="step" data-s="0"><i></i>Understanding the question</span>
             <span class="step" data-s="1"><i></i>Reading 8 weeks of vehicle memory</span>
@@ -422,6 +430,8 @@ canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-in
     <div class="modal" id="m-settings" style="text-align:left">
       <h2>Assistant settings</h2>
       <div class="sw" style="margin-top:12px"><div>Speak answers<small>Uses an on-device voice only</small></div><button class="tog" id="t-speak"></button></div>
+      <div class="sw"><div>Conversation mode<small>After answering, listen a few seconds for a follow-up</small></div><button class="tog" id="t-conv"></button></div>
+      <div class="sw"><div>Voice<small id="tts-s">checking…</small></div></div>
       <div class="sw"><div>Glance mode while driving<small>Headline and voice only when the car is moving</small></div><button class="tog" id="t-glance"></button></div>
       <div class="sw"><div>Eco motion<small>Fewer animations, less processor use</small></div><button class="tog" id="t-eco"></button></div>
       <div class="sw"><div>Voice input<small id="stt-s">checking…</small></div><button class="tog" id="t-mic"></button></div>
@@ -444,7 +454,7 @@ if (params.get("bezel") === "0") body.classList.remove("bezel");
 const mem = {get(k, d){try{const v = localStorage.getItem("vg." + k); return v === null ? d : JSON.parse(v);}catch(e){return d;}},
              set(k, v){try{localStorage.setItem("vg." + k, JSON.stringify(v));}catch(e){}}};
 const S = {state: "home", status: null, turns: [], speak: mem.get("speak", true), eco: mem.get("eco", false),
-           mic: mem.get("mic", false), glance: mem.get("glance", false), stt: false, last: null, rec: null};
+           mic: mem.get("mic", false), conv: mem.get("conv", true), tts: null, glance: mem.get("glance", false), stt: false, last: null, rec: null};
 if (params.get("fresh") === "1") mem.set("onboarded", false);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const icon = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
@@ -478,7 +488,9 @@ function applyEco(){body.classList.toggle("eco", S.eco); $("#t-eco").classList.t
 /* ---------------- vehicle status (home tiles) ---------------- */
 async function loadStatus(){
   try{
-    const s = await (await fetch("/api/status")).json(); S.status = s; S.stt = !!s.stt;
+    const s = await (await fetch("/api/status")).json(); S.status = s; S.stt = !!s.stt; S.tts = s.tts || "none";
+    $("#tts-s").textContent = {kokoro: "Warm natural voice (Kokoro, on-device)", piper: "Clear voice (Piper, on-device)",
+                               none: "System voice on this device (install a warm voice: get_model.py --voice)"}[S.tts] || S.tts;
     $("#clock").textContent = s.vehicle_clock || "--";
     $("#soc").textContent = s.soc ?? "--"; $("#range").textContent = s.range_km ?? "--";
     $("#socbar").style.width = (s.soc || 0) + "%";
@@ -504,22 +516,25 @@ function openAssistant(){
   if (!mem.get("onboarded", false)) return setState("onboard");
   listen();
 }
+function showKeyboard(on){ $("#panel").classList.toggle("kbd", !!on); if (on) setTimeout(() => $("#q").focus(), 200); }
 function listen(){
+  stopSpeak();
   setState("listen");
-  $("#lt").textContent = "Listening…"; $("#ls").textContent = "Ask me about your car.";
+  $("#lt").textContent = "Listening…"; $("#ls").textContent = "Ask me anything about your car.";
   $("#q").value = "";
-  if (S.stt && S.mic) { $("#micnote").textContent = "Speak now. Tap the orb when you're done."; startMic(); }
-  else { $("#lt").textContent = "I'm listening"; $("#micnote").textContent = S.stt ? "Voice is off in Settings." : "Voice needs the on-device speech model. Typing works offline too.";
-         setTimeout(() => $("#q").focus(), 350); }
+  if (S.stt && S.mic){ showKeyboard(false); $("#micnote").textContent = "Just speak. I'll answer out loud."; startMic(); }
+  else if (S.stt && !S.mic){ setState("mic"); prepMicCard(); }
+  else { $("#lt").textContent = "Voice isn't set up yet"; $("#ls").textContent = "Type your question for now.";
+         $("#micnote").textContent = "Install the on-device speech model: python scripts/get_model.py --speech"; showKeyboard(true); }
 }
 async function closeAssistant(){
-  stopMic(true); stopSpeak(); $("#drawer").classList.remove("open");
+  stopMic(true); stopSpeak(); setReady("Ready to listen", false); $("#drawer").classList.remove("open");
   if (S.state === "answer") { setState("bye"); await sleep(1700); }
   if (["bye","listen","think","answer"].includes(S.state)) setState("home");
 }
 $("#orb").addEventListener("click", () => {
   if (S.rec) return stopMic(false);
-  if (S.speaking) { stopSpeak(); return; }
+  if (S.speaking) { stopSpeak(); listen(); return; }                 // barge-in: interrupt and listen
   if (["home","answer","bye"].includes(S.state)) openAssistant();
 });
 $("#close").addEventListener("click", closeAssistant);
@@ -539,6 +554,7 @@ $("#mic-allow").addEventListener("click", async () => {
   listen();
 });
 $("#mic-not").addEventListener("click", () => { S.mic = false; mem.set("mic", false); listen(); });
+$("#kbtn").addEventListener("click", () => { stopMic(true); showKeyboard(true); });
 $("#askform").addEventListener("submit", e => { e.preventDefault(); const q = $("#q").value.trim(); if (q) ask(q); });
 const TOPICS = {"Right now":"How is my car right now?","Tyres":"What is the tyre pressure now?","Battery":"How is battery health right now?",
                 "What if":"Can I drive 150 km on this charge?","Range":"Why has my range dropped?","Improve":"How can I improve my range?",
@@ -555,6 +571,7 @@ $$(".dock button").forEach(b => b.addEventListener("click", () => {
   if (g === "safety") { ask("Show my safety log"); return; }
   toast("Demo tile: only the assistant is part of this prototype");
 }));
+$("#t-conv").addEventListener("click", () => { S.conv = !S.conv; mem.set("conv", S.conv); $("#t-conv").classList.toggle("on", S.conv); });
 $("#t-speak").addEventListener("click", () => { S.speak = !S.speak; mem.set("speak", S.speak); $("#t-speak").classList.toggle("on", S.speak); });
 $("#t-glance").addEventListener("click", () => { S.glance = !S.glance; mem.set("glance", S.glance); $("#t-glance").classList.toggle("on", S.glance);
   scr.classList.toggle("glance", !!(S.status && S.status.moving && S.glance)); });
@@ -566,15 +583,17 @@ $("#s-onb").addEventListener("click", () => { mem.set("onboarded", false); setSt
 $("#s-console").addEventListener("click", () => { location.href = "/console"; });
 addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT") { if (e.key === "Escape") closeAssistant(); return; }
-  if (e.key === " " || e.key === "/") { e.preventDefault(); openAssistant(); }
+  if (e.key === " " || e.key === "v" || e.key === "V") { e.preventDefault(); if (S.rec) stopMic(false); else openAssistant(); }
+  if (e.key === "/") { e.preventDefault(); openAssistant(); setTimeout(() => showKeyboard(true), 300); }
   if (e.key === "Escape") { if ($("#drawer").classList.contains("open")) $("#drawer").classList.remove("open"); else if (["onboard","mic","settings"].includes(S.state)) setState("home"); else closeAssistant(); }
   if (e.key === "b" || e.key === "B") { body.classList.toggle("bezel"); fit(); }
 });
 
 /* ---------------- ask ---------------- */
 async function ask(q){
-  stopMic(true); stopSpeak();
+  stopMic(true); stopSpeak(); setReady("Ready to listen", false);
   $("#tq").textContent = q;
+  $("#heard").textContent = S.heard === q ? "You said" : "";
   $$(".step").forEach(s => s.className = "step");
   setState("think");
   const steps = $$(".step"); let k = 0;
@@ -592,7 +611,9 @@ async function ask(q){
   render(a, wall);
   setState("answer");
   requestAnimationFrame(() => $$(".card").forEach((c, i) => setTimeout(() => c.classList.add("in"), 90 * i)));
-  speak(a.ui && a.ui.say);
+  const u = a.ui || {};
+  await say(u.voice || u.say || a.what, u.voice_style || "warm");
+  if (S.state === "answer" && !S.rec) converse(u);
 }
 
 function bars(n){ let s = '<span class="bars">'; for (let i = 1; i <= 5; i++) s += `<b class="${i <= n ? "f" : ""}"></b>`; return s + "</span>"; }
@@ -634,7 +655,7 @@ function render(a, wall){
     return;
   }
   $("#ans").className = "view v-answer" + (u.kind === "refuse" ? " refuse" : "");
-  $("#ans").innerHTML = `${hist}<div class="aq">${esc(a.question || "")}</div>${top}
+  $("#ans").innerHTML = `${hist}<div class="aq">${S.heard && S.heard === a.question ? '<span class="said">You said</span> ' : ""}${esc(a.question || "")}</div>${top}
     ${cards || ch ? `<div class="body"><div class="cards">${cards}</div>${ch}</div>` : ""}
     ${tip}
     <div class="foot" style="flex-direction:column;align-items:flex-start;gap:6px">${u.understood ? `<div class="understood">${esc(u.understood)}</div>` : ""}<div class="follow">${follow}</div></div>
@@ -685,33 +706,85 @@ function chartSvg(c){
   return `<div class="chart"><div class="t">${esc(c.title)}${c.unit ? " · " + esc(c.unit) : ""}</div><svg viewBox="0 0 ${W} ${H}">${g}</svg></div>`;
 }
 
-/* ---------------- voice out: on-device voices only ---------------- */
+/* ---------------- voice out: warm on-device voice (Kokoro/Piper on 127.0.0.1), sentence by sentence ---------------- */
+let playId = 0, curAudio = null, outCtx = null, outAn = null, outBuf = null;
+function outLevel(){ if (!outAn) return 0; outAn.getFloatTimeDomainData(outBuf); let s = 0; for (const v of outBuf) s += v * v; return Math.min(1, Math.sqrt(s / outBuf.length) * 7); }
+async function fetchChunk(text, style){
+  try{ const r = await fetch("/api/speak", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({text, style})});
+       return r.ok ? await r.blob() : null; }catch(e){ return null; }
+}
+function playBlob(blob, id){
+  return new Promise(res => {
+    const au = new Audio(URL.createObjectURL(blob)); curAudio = au;
+    try{
+      outCtx = outCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const src = outCtx.createMediaElementSource(au); outAn = outCtx.createAnalyser(); outAn.fftSize = 512; outBuf = new Float32Array(512);
+      src.connect(outAn); outAn.connect(outCtx.destination);
+    }catch(e){ outAn = null; }
+    const done = () => { if (curAudio === au) curAudio = null; res(); };
+    au.onended = done; au.onerror = done; au.onpause = done;
+    au.play().catch(done);
+    const guard = setInterval(() => { if (id !== playId) { clearInterval(guard); au.pause(); done(); } if (au.ended) clearInterval(guard); }, 100);
+  });
+}
 function localVoice(){
   if (!("speechSynthesis" in window)) return null;
   const v = speechSynthesis.getVoices().filter(v => v.localService && v.lang && v.lang.toLowerCase().startsWith("en"));
-  return v.find(x => /en-IN/i.test(x.lang)) || v.find(x => /en-GB/i.test(x.lang)) || v[0] || null;
+  return v.find(x => /natural|aria|jenny|zira|samantha/i.test(x.name)) || v.find(x => /en-IN|en-GB/i.test(x.lang)) || v[0] || null;
 }
-function speak(text){
+function sayLocal(text, id){
+  return new Promise(res => {
+    const v = localVoice(); if (!v) return res();                 // never fall back to a network voice
+    const u = new SpeechSynthesisUtterance(text); u.voice = v; u.rate = 0.97; u.pitch = 1.03;
+    u.onend = u.onerror = res; speechSynthesis.cancel(); speechSynthesis.speak(u);
+    const guard = setInterval(() => { if (id !== playId) { clearInterval(guard); speechSynthesis.cancel(); res(); } }, 150);
+  });
+}
+async function say(text, style = "warm"){
   if (!S.speak || !text) return;
-  const v = localVoice(); if (!v) return;          // never fall back to a network voice
-  const u = new SpeechSynthesisUtterance(text); u.voice = v; u.rate = 1.02;
-  u.onstart = () => { S.speaking = true; scr.classList.add("s-speak"); startWave(); };
-  u.onend = u.onerror = () => { S.speaking = false; scr.classList.remove("s-speak"); };
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  const id = ++playId;
+  S.speaking = true; scr.classList.add("s-speak"); startWave();
+  try{
+    if (S.tts && S.tts !== "none"){
+      const {chunks} = await (await fetch("/api/chunks", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({text})})).json();
+      let next = fetchChunk(chunks[0], style);
+      for (let i = 0; i < chunks.length; i++){
+        const blob = await next; if (id !== playId) return;
+        if (!blob) throw new Error("voice unavailable");
+        if (i + 1 < chunks.length) next = fetchChunk(chunks[i + 1], style);   // prepare the next sentence while this one plays
+        await playBlob(blob, id); if (id !== playId) return;
+      }
+    } else await sayLocal(text, id);
+  }catch(e){ if (id === playId) await sayLocal(text, id); }
+  finally{ if (id === playId){ S.speaking = false; scr.classList.remove("s-speak"); } }
 }
-function stopSpeak(){ if ("speechSynthesis" in window) speechSynthesis.cancel(); S.speaking = false; scr.classList.remove("s-speak"); }
+function stopSpeak(){ playId++; if (curAudio) curAudio.pause(); if ("speechSynthesis" in window) speechSynthesis.cancel(); S.speaking = false; scr.classList.remove("s-speak"); }
 if ("speechSynthesis" in window) speechSynthesis.getVoices();
+
+/* ---------------- conversation: answer -> "want me to check ...?" -> listen for a short follow-up ---------------- */
+const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|please|go ahead|do it|haan|ha|han ji|ji)\b/i;
+const NO = /^(no|nope|nah|that'?s (all|it)|thank|thanks|nothing|stop|bye|nahi|bas)\b/i;
+function setReady(text, active){ const r = $(".ready"); if (!r) return; r.firstChild && (r.firstChild.textContent = text); r.classList.toggle("on", !!active); }
+async function converse(u){
+  if (!(S.conv && S.stt && S.mic) || u.kind === "emergency" || S.state !== "answer") return;
+  if (u.ask_next){ await say(u.ask_next, "warm"); if (S.state !== "answer" || S.rec) return; }
+  S.pendingFollow = (u.follow || [])[0] || null;
+  setReady("Listening…", true);
+  startMic({followup: true, noSpeechMs: 6000});
+}
+async function goodbye(){ setReady("Ready to listen", false); await say("Happy to help. Drive safe.", "warm"); closeAssistant(); }
 
 /* ---------------- voice in: mic -> WAV -> on-device whisper.cpp (/api/listen) ---------------- */
 let level = 0;
-async function startMic(){
+async function startMic(opt = {}){
   if (S.rec) return;
+  stopSpeak();
   try{
     const stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});
     const ac = new (window.AudioContext || window.webkitAudioContext)();
     const src = ac.createMediaStreamSource(stream), an = ac.createAnalyser(); an.fftSize = 1024; src.connect(an);
     const proc = ac.createScriptProcessor(4096, 1, 1); src.connect(proc); proc.connect(ac.destination);
-    const R = S.rec = {stream, ac, an, proc, chunks: [], t0: performance.now(), heard: 0, quiet: 0};
+    const R = S.rec = {stream, ac, an, proc, chunks: [], t0: performance.now(), heard: 0, quiet: 0, opt};
     const buf = new Float32Array(an.fftSize);
     proc.onaudioprocess = e => {
       const d = e.inputBuffer.getChannelData(0); R.chunks.push(new Float32Array(d));
@@ -720,19 +793,36 @@ async function startMic(){
       const dt = d.length / ac.sampleRate;
       if (rms > 0.02) { R.heard += dt; R.quiet = 0; } else R.quiet += dt;
       if ((R.heard > 0.3 && R.quiet > 1.2) || performance.now() - R.t0 > 9000) stopMic(false);
+      else if (opt.noSpeechMs && R.heard < 0.2 && performance.now() - R.t0 > opt.noSpeechMs) stopMic(false);
     };
-  }catch(e){ S.rec = null; toast("Microphone unavailable. Type your question instead."); $("#q").focus(); }
+  }catch(e){ S.rec = null; toast("Microphone unavailable. Type your question instead."); showKeyboard(true); }
 }
 async function stopMic(cancel){
   const R = S.rec; if (!R) return; S.rec = null; level = 0;
   R.proc.disconnect(); R.stream.getTracks().forEach(t => t.stop());
   const rate = R.ac.sampleRate; R.ac.close();
-  if (cancel || R.heard < 0.3) return;
-  $("#lt").textContent = "Got it…"; $("#ls").textContent = "Turning speech into text on this car";
+  const follow = R.opt && R.opt.followup;
+  if (cancel) return;
+  if (R.heard < 0.3){
+    if (follow) return goodbye();
+    $("#lt").textContent = "I didn't hear anything"; $("#ls").textContent = "Tap the orb and ask again.";
+    return;
+  }
+  if (follow) setReady("Got it…", true);
+  else { $("#lt").textContent = "Got it…"; $("#ls").textContent = "Turning speech into text on this car"; }
   const wav = toWav(R.chunks, rate);
   try{
     const r = await (await fetch("/api/listen", {method:"POST", headers:{"Content-Type":"audio/wav"}, body: wav})).json();
-    if (r.text) { ask(r.text); } else { $("#lt").textContent = "Sorry, I didn't catch that"; $("#ls").textContent = "Try again or type below."; }
+    const t = (r.text || "").trim();
+    if (!t){
+      if (follow) return goodbye();
+      $("#lt").textContent = "Sorry, I didn't catch that"; $("#ls").textContent = "Tap the orb and try again."; say("Sorry, I didn't catch that.");
+      return;
+    }
+    S.heard = t;
+    if (follow && S.pendingFollow && YES.test(t)) return ask(S.pendingFollow);
+    if (follow && NO.test(t)) return goodbye();
+    ask(t);
   }catch(e){ toast("Speech service unavailable"); }
 }
 function toWav(chunks, rate){
@@ -751,9 +841,9 @@ function startWave(){
   if (waveOn) return; waveOn = true;
   const cv = $("#wave"), g = cv.getContext("2d"), W = cv.width, H = cv.height; let t = 0, amp = 0;
   const frame = () => {
-    const active = S.state === "listen" || S.speaking;
+    const active = S.state === "listen" || S.speaking || !!S.rec;
     if (!active) { g.clearRect(0, 0, W, H); waveOn = false; return; }
-    const target = S.rec ? 0.15 + level * 1.4 : (S.speaking ? 0.55 + 0.35 * Math.sin(t * 7) * Math.sin(t * 2.3) : 0.22);
+    const target = S.rec ? 0.15 + level * 1.4 : (S.speaking ? (outAn ? 0.15 + outLevel() * 1.6 : 0.55 + 0.35 * Math.sin(t * 7) * Math.sin(t * 2.3)) : 0.22);
     amp += (target - amp) * 0.12; t += S.eco ? 0.02 : 0.035;
     g.clearRect(0, 0, W, H);
     const cx = S.state === "listen" ? 0.73 * W : 0.5 * W;
@@ -774,7 +864,7 @@ function startWave(){
 }
 
 /* ---------------- boot ---------------- */
-fit(); applyEco(); $("#t-speak").classList.toggle("on", S.speak); $("#t-glance").classList.toggle("on", S.glance);
+fit(); applyEco(); $("#t-speak").classList.toggle("on", S.speak); $("#t-conv").classList.toggle("on", S.conv); $("#t-glance").classList.toggle("on", S.glance);
 loadStatus().then(() => {
   const q = params.get("q");
   if (q) { mem.set("onboarded", true); ask(q); }
