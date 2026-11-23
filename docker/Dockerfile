@@ -8,9 +8,11 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp /src \
     && cmake --build /src/build -j4 --target llama-server
 
 FROM python:3.13-slim
-RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+# gcc only for building wheels that have no ARM binary (e.g. zstd); removed again in the same layer
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 gcc libc6-dev \
+    && pip install --no-cache-dir -r /tmp/requirements.txt \
+    && apt-get purge -y gcc libc6-dev && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 COPY --from=llama /src/build/bin/llama-server /usr/local/bin/llama-server
 WORKDIR /app
 COPY . /app
