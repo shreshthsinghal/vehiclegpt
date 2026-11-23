@@ -95,13 +95,16 @@ class VehicleGPT:
             ans.confidence = "low" if ans.confidence == "high" else ans.confidence
         if path == "SMART" and ans.verified and self.router.learned_path is not None:
             self.router.learn(question, plan["intent"], plan)      # next time this is a FAST question
-        ans.path, ans.plan = path, plan
+        ans.path, ans.plan = path, {**plan, **(ans.plan or {})}
+        if path in ("FAST-lowconf", "SMART-fallback") or (path == "SMART" and route.intent != plan.get("intent")):
+            ans.plan = {**ans.plan, "alternatives": [c for c in route.candidates if c != plan.get("intent")][:3]}
         ans.timings_ms = {"route": (t1 - t0) * 1e3, "plan": (t2 - t1) * 1e3, "query": (t3 - t2) * 1e3,
                           "verify": (t4 - t3) * 1e3, "total": (t4 - t0) * 1e3}
         return ans
 
 
     def _related(self, question: str, t0: float) -> Answer:
+        import re as _re
         from .dates import fmt_time
         from .embed import embed
         hits = self.store.search_meaning(embed(question), k=5)
@@ -113,6 +116,9 @@ class VehicleGPT:
                 ans.fact(f"t{e['id']}", fmt_time(e["ts"]))
                 if e["code"]:
                     ans.fact(f"c{e['id']}", e["code"], source="events table")
+        for line in ans.details:                      # quoted stored event values
+            for n in _re.findall(r"\d+(?:\.\d+)?", line):
+                ans.fact("ev_n", float(n), source="events table (quoted)")
                 ans.details.append(f"{fmt_time(e['ts'])} {e['type'].replace('_', ' ').lower()} {e['code'] or ''}".strip())
         ans.evidence.append("meaning search (sqlite-vec) over all event descriptions")
         ans = verify(ans)

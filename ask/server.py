@@ -87,7 +87,7 @@ class App:
 
     def status(self) -> dict:
         with self.lock:
-            a = self.vg.ask("what is my battery level now")
+            a = self.vg.ask("how is my car right now")
             now = self.vg.ctx.now
             warns = self.st.events(["WARNING_ON", "WARNING_OFF"], now - 3 * 86400, now + 1)
             active = {}

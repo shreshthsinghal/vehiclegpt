@@ -140,6 +140,16 @@ charging_history:
   - is fast charging hurting my battery
 
 vehicle_status_now:
+  - what is the tyre pressure right now
+  - is the camera working
+  - what gear is the car in
+  - is the car charging now
+  - what is the motor temperature now
+  - is the ac on
+  - give me the full status of my car
+  - how is my car doing right now
+  - what is the 12 volt battery voltage
+  - current battery health
   - what is my battery level now
   - current range
   - are my tyre pressures ok right now
@@ -227,3 +237,33 @@ privacy:
   - track the driver's location
   - which person was driving
   - show me where the car went last night
+
+what_if:
+  - can i make a 200 km trip on the current charge
+  - will i reach the airport 60 km away without charging
+  - how much range will i have if i switch off the ac
+  - what if i drive at 120 km per hour on the highway
+  - how long will it take to charge to 80 percent at home
+  - how long does a fast charge to full take
+
+improve:
+  - how can i improve my range
+  - how can i stretch my battery further
+  - tips to save battery
+  - how can i make my car more efficient
+  - what can i do to increase range
+  - how do i squeeze more distance out of each charge
+  - how do i reduce energy consumption
+
+safety_log:
+  - show me the safety log
+  - list all safety events
+  - were there any safety incidents
+  - did stability control kick in
+  - give me a safety summary of the car
+  - safety report for the last month
+
+emergency:
+  - my brakes are not working what do i do
+  - there is smoke coming from the car
+  - help emergency

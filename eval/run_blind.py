@@ -28,14 +28,14 @@ def ok(expect: str, intent: str) -> bool:
     return intent == expect.split(":", 1)[1]
 
 
-def main(smart: bool, tag: str, store_path=None, out_dir=None):
+def main(smart: bool, tag: str, store_path=None, out_dir=None, file="blind_questions.yaml"):
     planner = None
     if smart:
         from reason.planner import SlmPlanner
         planner = SlmPlanner()
     kw = {"store_path": store_path} if store_path else {}
     vg = VehicleGPT(planner=planner, learn=False, **kw)     # never learn from the blind set
-    qs = yaml.safe_load(open(ROOT / "eval" / "blind_questions.yaml"))["questions"]
+    qs = yaml.safe_load(open(ROOT / "eval" / file))["questions"]
     rows, hit = [], 0
     for i, x in enumerate(qs, 1):
         a = vg.ask(x["q"])
@@ -44,6 +44,8 @@ def main(smart: bool, tag: str, store_path=None, out_dir=None):
         rows.append({"n": i, "q": x["q"], "expect": x["expect"], "intent": a.intent, "path": a.path, "routing_ok": good,
                      "verified": a.verified, "what": a.what, "ms": round(a.timings_ms.get("total", 0), 1)})
         print(f"{'OK' if good else 'XX'} {i:2d} {a.path:14s} {a.intent:18s} <- {x['q'][:80]}")
+        if not a.verified:
+            print(f"   unverified: {a.unverified}")
     by = {}
     for r in rows:
         k = r["expect"].split(":")[0]
@@ -51,7 +53,7 @@ def main(smart: bool, tag: str, store_path=None, out_dir=None):
     summary = {"mode": "smart" if smart else "fast-only", "routing_ok": f"{hit}/{len(qs)}",
                "by_kind": {k: f"{a}/{b}" for k, (a, b) in by.items()},
                "verified": f"{sum(r['verified'] for r in rows)}/{len(qs)}"}
-    out = (out_dir or ROOT / "eval" / "results") / f"blind_{tag}_{summary['mode']}.json"
+    out = (out_dir or ROOT / "eval" / "results") / f"{file.split('_')[0]}_{tag}_{summary['mode']}.json"
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({"summary": summary, "rows": rows}, indent=1))
     print("BLIND " + json.dumps(summary))
@@ -62,5 +64,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--smart", action="store_true")
     ap.add_argument("--tag", default="baseline")
+    ap.add_argument("--file", default="blind_questions.yaml")
     a = ap.parse_args()
-    main(a.smart, a.tag)
+    main(a.smart, a.tag, file=a.file)

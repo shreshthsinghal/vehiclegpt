@@ -76,7 +76,7 @@ body.bezel #screen{border-radius:22px}
 /* ---------- dock ---------- */
 .dock{position:absolute;left:0;right:0;bottom:0;height:86px;display:flex;align-items:stretch;justify-content:center;gap:6px;
   background:linear-gradient(180deg,rgba(12,15,17,0),rgba(12,15,17,.85) 35%);border-top:1px solid var(--line)}
-.dock button{width:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:13.5px;color:var(--mute);position:relative}
+.dock button{width:138px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:13.5px;color:var(--mute);position:relative}
 .dock button svg{font-size:25px}
 .dock button.on{color:var(--teal)} .dock button.on:before{content:"";position:absolute;top:-1px;left:30px;right:30px;height:2px;background:var(--teal);box-shadow:0 0 10px var(--teal)}
 
@@ -128,7 +128,7 @@ body.eco #orb .halo{animation:none}
 /* listen */
 .v-listen h1{font-size:50px;font-weight:300;margin-top:50px}
 .v-listen p{font-size:20px;color:var(--mute);margin-top:6px}
-.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;max-width:360px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;max-width:420px}
 .chip{padding:9px 18px;border-radius:22px;background:rgba(255,255,255,.07);border:1px solid var(--line2);font-size:15px;transition:background .2s}
 .chip:hover{background:rgba(63,227,220,.14);border-color:rgba(63,227,220,.4)}
 .askbox{position:absolute;left:0;bottom:0;width:380px;display:flex;gap:8px}
@@ -199,6 +199,21 @@ canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-in
 .ready button{width:44px;height:44px;border-radius:50%;background:rgba(63,227,220,.12);border:1px solid rgba(63,227,220,.35);color:var(--teal);display:grid;place-items:center;font-size:20px}
 .refuse .hero{display:none}
 .shield.info{background:rgba(63,227,220,.1);color:var(--teal)}
+.understood{font-size:13px;color:var(--amber);margin-bottom:6px}
+.emg{position:absolute;inset:0;border-radius:22px;padding:30px 40px;background:linear-gradient(135deg,rgba(90,18,18,.96),rgba(40,10,10,.97));border:1px solid rgba(255,122,107,.45)}
+.emg h1{font-size:34px;font-weight:500;color:#fff;display:flex;align-items:center;gap:14px}
+.emg h1 svg{color:#ff7a6b;font-size:34px}
+.emg ol{margin:14px 0 0 0;padding:0;list-style:none;counter-reset:s;max-width:820px}
+.emg li{counter-increment:s;font-size:18px;line-height:1.3;color:#fbe9e7;padding:7px 0 7px 52px;position:relative;border-bottom:1px solid rgba(255,255,255,.07)}
+.emg li:before{content:counter(s);position:absolute;left:0;top:7px;width:34px;height:34px;border-radius:50%;background:#ff7a6b;color:#2a0806;font-weight:700;display:grid;place-items:center;font-size:17px}
+.emg .live{margin-top:14px;font-size:14px;color:#f4c7c1}
+.emg .call{position:absolute;right:80px;top:24px;background:#ff7a6b;color:#2a0806;border-radius:16px;padding:12px 20px;font-size:22px;font-weight:700;text-align:center;line-height:1.1}
+.emg .call small{display:block;font-size:12px;font-weight:500}
+.emg .src{position:absolute;left:40px;bottom:16px;font-size:12px;color:#d6a39c;cursor:pointer}
+.emg .topics{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.emg .topics .chip{background:rgba(255,122,107,.15);border-color:rgba(255,122,107,.45);color:#fff}
+.emergency #orb{opacity:0;pointer-events:none}
+.status .sos{background:#c9372c;color:#fff;border-radius:14px;padding:3px 12px;font-size:12.5px;font-weight:700;letter-spacing:.5px}
 .shield{width:64px;height:64px;border-radius:18px;background:rgba(233,182,92,.1);color:var(--amber);display:grid;place-items:center;font-size:34px;margin-bottom:14px}
 /* how-I-know drawer */
 #drawer{position:absolute;right:28px;top:52px;bottom:100px;width:430px;z-index:40;border-radius:22px;padding:26px 28px;overflow:auto;
@@ -287,6 +302,7 @@ canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-in
       <span class="pill" title="Nothing leaves the car"><svg class="i"><use href="#i-lock"/></svg>On-device · <span id="egress">0 B sent</span></span>
       <span class="pill warn" id="warnpill" style="display:none"></span>
       <span class="sp"></span>
+      <button class="sos" id="sos" title="Emergency help">SOS</button>
       <span id="clock">--</span>
     </div>
 
@@ -380,6 +396,7 @@ canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-in
       <button data-go="ev"><svg class="i"><use href="#i-ev"/></svg>EV Connect</button>
       <button data-go="nav"><svg class="i"><use href="#i-nav"/></svg>Navigation</button>
       <button data-go="media"><svg class="i"><use href="#i-music"/></svg>Media</button>
+      <button data-go="safety"><svg class="i"><use href="#i-shield"/></svg>Safety</button>
       <button data-go="phone"><svg class="i"><use href="#i-phone"/></svg>Phone</button>
       <button data-go="settings"><svg class="i"><use href="#i-gear"/></svg>Settings</button>
     </nav>
@@ -444,7 +461,8 @@ addEventListener("resize", fit);
 /* ---------------- state machine ---------------- */
 function setState(s){
   S.state = s;
-  scr.className = "s-" + s + (S.speaking ? " s-speak" : "") + (S.glance && S.status && S.status.moving ? " glance" : "");
+  scr.className = "s-" + s + (S.speaking ? " s-speak" : "") + (S.glance && S.status && S.status.moving ? " glance" : "")
+    + (S.emergency && s === "answer" ? " emergency" : "");
   body.classList.toggle("live", ["listen","think","answer"].includes(s));
   wake();
   if (s === "listen" || S.speaking) startWave();
@@ -505,6 +523,7 @@ $("#orb").addEventListener("click", () => {
   if (["home","answer","bye"].includes(S.state)) openAssistant();
 });
 $("#close").addEventListener("click", closeAssistant);
+$("#sos").addEventListener("click", () => ask("Emergency, help"));
 $("#scrim").addEventListener("click", () => setState("home"));
 $("#ob-try").addEventListener("click", () => { mem.set("onboarded", true); setState("mic"); prepMicCard(); });
 $("#ob-later").addEventListener("click", () => { mem.set("onboarded", true); setState("home"); });
@@ -521,8 +540,9 @@ $("#mic-allow").addEventListener("click", async () => {
 });
 $("#mic-not").addEventListener("click", () => { S.mic = false; mem.set("mic", false); listen(); });
 $("#askform").addEventListener("submit", e => { e.preventDefault(); const q = $("#q").value.trim(); if (q) ask(q); });
-const TOPICS = {"Battery":"Is my battery healthy?","Range":"How much range do I have left?","Charging":"Show my charging history",
-                "Efficiency":"Why has my range dropped?","Faults":"Any fault codes?"};
+const TOPICS = {"Right now":"How is my car right now?","Tyres":"What is the tyre pressure now?","Battery":"How is battery health right now?",
+                "What if":"Can I drive 150 km on this charge?","Range":"Why has my range dropped?","Improve":"How can I improve my range?",
+                "Safety log":"Show my safety log","Faults":"Any fault codes?"};
 $("#topics").innerHTML = Object.keys(TOPICS).map(k => `<button class="chip" data-q="${esc(TOPICS[k])}">${k}</button>`).join("");
 document.addEventListener("click", e => { const c = e.target.closest("[data-q]"); if (c) ask(c.dataset.q); });
 
@@ -531,7 +551,8 @@ $$(".dock button").forEach(b => b.addEventListener("click", () => {
   const g = b.dataset.go;
   if (g === "settings") { setState("settings"); return; }
   if (g === "home") { closeAssistant(); return; }
-  if (g === "ev") { ask("How much range do I have left?"); return; }
+  if (g === "ev") { ask("How is my car right now?"); return; }
+  if (g === "safety") { ask("Show my safety log"); return; }
   toast("Demo tile: only the assistant is part of this prototype");
 }));
 $("#t-speak").addEventListener("click", () => { S.speak = !S.speak; mem.set("speak", S.speak); $("#t-speak").classList.toggle("on", S.speak); });
@@ -596,13 +617,27 @@ function render(a, wall){
   const ms = a.timings_ms && a.timings_ms.total != null ? a.timings_ms.total : wall;
   const path = a.path === "SMART" ? "planned by on-device AI" : (a.path === "MEANING-SEARCH" ? "memory search" : "instant playbook");
   const trust = `<button class="trust ${ok ? "" : "bad"}" id="how">${icon(ok ? "check" : "warn")}${ok ? "Every number checked" : "Some numbers unchecked"} · ${path} · ${ms < 1 ? "<1 ms" : ms < 1000 ? Math.round(ms) + " ms" : (ms/1000).toFixed(1) + " s"}</button>`;
-  const tip = a.next ? `<div class="tip">${icon("bulb")}<span>${esc(a.next)}</span></div>` : "";
+  const tip = a.next && !u.understood ? `<div class="tip">${icon("bulb")}<span>${esc(a.next)}</span></div>` : "";
   const follow = (u.follow || []).map(q => `<button class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join("");
+  S.emergency = u.kind === "emergency";
+  if (u.kind === "emergency") {
+    const e = u.emergency || {};
+    const steps = (e.steps || []).map(x => `<li>${esc(x)}</li>`).join("");
+    const topics = (e.topics || []).map(t => `<button class="chip" data-q="${esc(t)} - what do I do?">${esc(t)}</button>`).join("");
+    $("#ans").className = "view v-answer";
+    $("#ans").innerHTML = `<div class="emg"><div class="call">112<small>emergency</small></div>
+      <h1>${icon("warn")}${esc(e.title || "Emergency")}</h1>
+      ${steps ? `<ol>${steps}</ol>` : `<div class="what big" style="color:#fbe9e7;max-width:600px;margin-top:10px">${esc(a.what)}</div><div class="topics">${topics}</div>`}
+      <div class="live">${esc((a.why || [])[0] || "")}</div>
+      <div class="src">${(e.sources || []).length ? "Fixed steps from cited sources (not AI-generated) · tap for sources" : "Ambulance 108 · Fire 101 · Police/all 112"}</div></div>`;
+    $(".emg .src").addEventListener("click", () => openDrawer(a));
+    return;
+  }
   $("#ans").className = "view v-answer" + (u.kind === "refuse" ? " refuse" : "");
   $("#ans").innerHTML = `${hist}<div class="aq">${esc(a.question || "")}</div>${top}
     ${cards || ch ? `<div class="body"><div class="cards">${cards}</div>${ch}</div>` : ""}
     ${tip}
-    <div class="foot"><div class="follow">${follow}</div></div>
+    <div class="foot" style="flex-direction:column;align-items:flex-start;gap:6px">${u.understood ? `<div class="understood">${esc(u.understood)}</div>` : ""}<div class="follow">${follow}</div></div>
     <div class="foot" style="margin-top:12px">${trust}<div class="ready">Ready to listen<button id="again" aria-label="Ask again">${icon("mic")}</button></div></div>`;
   $("#how").addEventListener("click", () => openDrawer(a));
   $("#again").addEventListener("click", listen);

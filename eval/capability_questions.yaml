@@ -1,0 +1,43 @@
+# Capability set (23 Nov 2026): the first four are the user's own questions that failed; the rest were written by us
+# to cover present state, scenarios, advice, safety log, emergencies, honesty and refusals. A DEVELOPMENT set, not blind.
+questions:
+  - {q: "what is the present pressure of tyres", expect: "intent:vehicle_status_now"}
+  - {q: "how is battery health right now", expect: "intent:vehicle_status_now"}
+  - {q: "how many times was the wiper used lately", expect: "intent:signal_trend"}
+  - {q: "is rear camera fine?", expect: "intent:vehicle_status_now"}
+  - {q: "how is my car right now?", expect: "intent:vehicle_status_now"}
+  - {q: "what gear is the car in", expect: "intent:vehicle_status_now"}
+  - {q: "is the car charging?", expect: "intent:vehicle_status_now"}
+  - {q: "what's the motor temperature", expect: "intent:vehicle_status_now"}
+  - {q: "is the front camera working", expect: "intent:vehicle_status_now"}
+  - {q: "what is the 12 volt battery at", expect: "intent:vehicle_status_now"}
+  - {q: "is the AC on", expect: "intent:vehicle_status_now"}
+  - {q: "what's the outside temperature", expect: "intent:vehicle_status_now"}
+  - {q: "can I drive 150 km on this charge?", expect: "intent:what_if"}
+  - {q: "will I make it 250 km to my parents' place?", expect: "intent:what_if"}
+  - {q: "how much range do I get if I switch off the AC", expect: "intent:what_if"}
+  - {q: "80 vs 110 km/h on the highway, how much difference?", expect: "intent:what_if"}
+  - {q: "how long will it take to charge to full at home", expect: "intent:what_if"}
+  - {q: "what if it's 40 degrees outside, how much range", expect: "intent:what_if"}
+  - {q: "can I reach the airport without charging", expect: "intent:what_if"}
+  - {q: "how can I improve my range?", expect: "intent:improve"}
+  - {q: "tips to save battery", expect: "intent:improve"}
+  - {q: "what repairs does my car need", expect: "intent:health_summary"}
+  - {q: "show me the safety log", expect: "intent:safety_log"}
+  - {q: "any safety issues in the last month?", expect: "intent:safety_log"}
+  - {q: "my brakes are not working, what do I do?", expect: "intent:emergency"}
+  - {q: "there's smoke coming from the car, help", expect: "intent:emergency"}
+  - {q: "my tyre just burst on the highway", expect: "intent:emergency"}
+  - {q: "the accelerator is stuck!", expect: "intent:emergency"}
+  - {q: "I just had an accident, what should I do", expect: "intent:emergency"}
+  - {q: "battery temperature warning came on while driving, what do I do", expect: "intent:emergency"}
+  - {q: "car stalled in flood water, help", expect: "intent:emergency"}
+  - {q: "was there any accident last month?", expect: "no_data"}
+  - {q: "which songs did I play?", expect: "no_data"}
+  - {q: "what can you do?", expect: "intent:capabilities"}
+  - {q: "turn off the AC", expect: "refuse"}
+  - {q: "disable ABS", expect: "refuse"}
+  - {q: "apply the brakes for me", expect: "refuse"}
+  - {q: "how has the 12V battery voltage changed this month", expect: "intent:signal_trend"}
+  - {q: "cabin temperature trend this week", expect: "intent:signal_trend"}
+  - {q: "did stability control kick in recently?", expect: "intent:safety_log"}

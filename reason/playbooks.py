@@ -563,6 +563,13 @@ def segment_compare(ctx: Ctx, q: str, plan: dict) -> Answer:
 
 
 # =============================================================== generic playbooks
+SIGNAL_WORDS = [("wiper", r"wiper|\brain"), ("battery_health", r"health|soh|degrad"), ("ac_power", r"\bac\b|air.?con|a/c|hvac"),
+                ("regen_power", r"regen"), ("tyre_rear_left", r"tyre|tire"), ("motor_temp", r"motor"),
+                ("lv_voltage", r"12 ?v|12-volt"), ("ambient_temp", r"outside|ambient|weather"),
+                ("coolant_pump", r"pump|coolant"), ("battery_temp", r"batter\w* (temp|hot)|hot|temperature"),
+                ("range", r"range"), ("state_of_charge", r"charge level|soc|battery level")]
+
+
 def _pick_signal(q: str, plan: dict) -> str:
     if plan.get("signal") in SIGNALS:
         return plan["signal"]
@@ -607,8 +614,22 @@ def _tyre_compare(ctx: Ctx, a: Answer, w: Window) -> Answer:
 
 def signal_trend(ctx: Ctx, q: str, plan: dict) -> Answer:
     a = Answer(q, "signal_trend")
-    key = _pick_signal(q, plan)
-    path, label, unit = SIGNALS[key]
+    from .catalogue import CATALOGUE, find as find_sig
+    cat = plan.get("signal") if plan.get("signal") in CATALOGUE and plan.get("signal") not in SIGNALS else None
+    if cat is None:
+        hits = [h for h in find_sig(q) if CATALOGUE[h][4] is None]
+        legacy = {v[0]: k for k, v in SIGNALS.items()}
+        if hits and CATALOGUE[hits[0]][0] not in legacy:
+            cat = hits[0]
+        elif hits and plan.get("signal") not in SIGNALS:
+            plan = {**plan, "signal": legacy[CATALOGUE[hits[0]][0]]} if not any(
+                re.search(p_, q.lower()) for k_, p_ in SIGNAL_WORDS if k_ in ("ac_power", "regen_power", "wiper")) else plan
+    if cat is not None:
+        key = cat
+        path, label, unit = CATALOGUE[cat][0], CATALOGUE[cat][1], CATALOGUE[cat][2]
+    else:
+        key = _pick_signal(q, plan)
+        path, label, unit = SIGNALS[key]
     w = ctx.window(q, plan, default_days=30)
     r = ctx.st.rollup(path, w.start, w.end)
     f = a.fact
@@ -620,9 +641,12 @@ def signal_trend(ctx: Ctx, q: str, plan: dict) -> Answer:
         on = r["mean"] > 0
         heavy = r["max"] >= 2
         days_on = len({fmt_date(m * 60) for m in r["minute"][on]})
-        f("min_on", int(on.sum())); f("min_heavy", int(heavy.sum())); f("days_on", days_on); f("w", w.fmt())
-        a.what = (f"Yes, the wipers were used {phrase(w)}: on {days_on} days, {int(on.sum())} driving minutes in total, "
-                  f"{int(heavy.sum())} of them on low or high (steady rain)." if on.any() else
+        mins = list(r["minute"][on])
+        uses = sum(1 for i, m_ in enumerate(mins) if i == 0 or m_ - mins[i - 1] > 3)
+        f("min_on", int(on.sum())); f("min_heavy", int(heavy.sum())); f("days_on", days_on); f("w", w.fmt()); f("uses", uses)
+        times = "once" if uses == 1 else f"{uses} separate times"
+        a.what = (f"The wipers were switched on {times} {phrase(w)}, on {days_on} day{'s' if days_on != 1 else ''}: {int(on.sum())} "
+                  f"driving minutes in total, {int(heavy.sum())} of them on low or high (steady rain)." if on.any() else
                   f"No, the wipers were not used {phrase(w)}.")
         if on.any():
             a.why.append("Ask \"was there any problem during rain?\" to see how lane assist and braking behaved then.")
@@ -664,7 +688,7 @@ def signal_trend(ctx: Ctx, q: str, plan: dict) -> Answer:
     a.chart = {"type": "line", "title": f"{label} - daily average", "unit": unit,
                "labels": [fmt_date(w.start + d * 86400)[4:] for d in np.unique(days)], "values": [r1(x) for x in daily]}
     trend = "stable" if abs(slope) < 0.05 * max(abs(np.mean(daily)), 1e-6) / 4 else ("rising" if slope > 0 else "falling")
-    a.what = (f"{label.capitalize()} {phrase(w)}: average {r1(np.mean(r['mean']))} {unit}, highest "
+    a.what = (f"{label[0].upper() + label[1:]} {phrase(w)}: average {r1(np.mean(r['mean']))} {unit}, highest "
               f"{r1(r['max'][i])} {unit} on {fmt_time(r['minute'][i] * 60)}, lowest {r1(r['min'][j])} {unit}.")
     if w.days() > 2:                                   # a trend needs more than a day of data
         a.why.append(f"Trend: {trend} ({r2(slope):+} {unit} per week).")
@@ -1148,3 +1172,7 @@ PLAYBOOKS = {"range_drop": range_drop, "efficiency_change": efficiency_change, "
              "trip_stats": trip_stats, "data_quality": data_quality, "health_summary": health_summary,
              "not_recorded": not_recorded,
              "unsafe_command": refuse, "privacy": refuse, "out_of_scope": refuse}
+
+
+from .live import PLAYBOOKS_LIVE  # noqa: E402  (present state, scenarios, advice, safety log, emergency)
+PLAYBOOKS.update(PLAYBOOKS_LIVE)

@@ -120,5 +120,18 @@ Turn on voice input once: `python scripts/get_model.py --speech` (Windows downlo
 Demo framing: `?bezel=0` removes the dashboard frame, **B** toggles it, `?fresh=1` replays onboarding, and `?q=...` asks directly.
 All 14 states are in `docs/screens/hmi/`.
 
+## Present state, scenarios, advice and safety (fix round after user testing, 23 Nov)
+| Ask | What happens |
+|---|---|
+| "What is the tyre pressure now?", "Is the camera fine?", "How is my car right now?" | **Signal catalogue** (`reason/catalogue.py`): 48 recorded signals in plain words, current value from the WARM tier. A rear camera isn't recorded, so the answer says so and reports the front camera instead. |
+| "Can I drive 180 km at 100 km/h?", "Range with the AC off?", "80 vs 110 km/h?", "How long to charge to 80%?" | **What-if** on a consumption model fitted on this car's own 120 trips (R² 0.95; AC power vs outside temperature R² 0.85). Usable battery (60.0 kWh) comes from the charging sessions. Trips needing more than one charge get a charging-stop plan. |
+| "How can I improve my range?" | **Advice with numbers** from the same model (e.g. gentler AC +47 km per charge; 10 km/h slower on the highway = 6.7% less per highway km). |
+| "Show my safety log" | Timeline of warnings, faults, early signs, ESC interventions, very hard braking and lane-assist drop-outs, with severity. |
+| "My brakes aren't working!" / **SOS** button | **Emergency guide** (`reason/emergency.yaml`): 8 topics with fixed steps written from cited sources (NFPA, NHTSA, US DOT, Kia owner's manual, weather.gov, Mission Safer Roads). Never AI-generated; shown as a red card with 112, read aloud, plus the car's live state. VehicleGPT never operates the car. |
+| Unclear questions | The screen shows **"I understood this as … Not what you meant?"** with alternatives, instead of silently answering the nearest thing. |
+
+The on-device SLM now chooses among 18 analyses and 53 signal names. For what-if questions it fills a second tiny form
+(distance, speed, AC, charge target); for emergencies, a topic form. Emergency steps are never generated.
+
 ## Status
 Phase 7a (head-unit screen + voice) complete. Tests: `python -m pytest -q` (24 tests, ~3 min).

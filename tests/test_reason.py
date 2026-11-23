@@ -90,3 +90,21 @@ def test_blind_set_regressions(full_store, tmp_path):
     s = main(False, "pytest", store_path=full_store[0], out_dir=tmp_path)
     assert s["by_kind"]["refuse"] == "7/7" and s["by_kind"]["no_data"] == "6/6"
     assert int(s["routing_ok"].split("/")[0]) >= 38 and s["verified"] == "41/41"
+
+
+@pytest.mark.slow
+def test_capabilities_present_state_scenarios_safety(full_store, tmp_path):
+    """Present state, what-if, advice, safety log, emergency guide: routed right and fully verified."""
+    from eval.run_blind import main
+    s = main(False, "pytest", store_path=full_store[0], out_dir=tmp_path, file="capability_questions.yaml")
+    assert int(s["routing_ok"].split("/")[0]) >= 38 and s["verified"] == "40/40"
+    from reason.engine import VehicleGPT
+    from reason.live import guide
+    vg = VehicleGPT(full_store[0], learn=False)
+    a = vg.ask("my brakes are not working, what do I do?")
+    assert a.intent == "emergency" and a.plan["emergency"]["steps"] == guide()["topics"]["brake_failure"]["steps"]  # fixed text
+    assert all(src.startswith("https://") for src in a.plan["emergency"]["sources"])
+    a = vg.ask("is rear camera fine?")
+    assert a.intent == "vehicle_status_now" and "front camera" in a.what.lower()       # honest: no rear camera recorded
+    a = vg.ask("can I drive 150 km on this charge?")
+    assert a.intent == "what_if" and a.verified and any(f.name == "arrive" for f in a.facts)

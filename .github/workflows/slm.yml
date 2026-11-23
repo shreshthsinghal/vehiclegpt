@@ -2,7 +2,7 @@ name: SLM (real model)
 
 on:
   push:
-    paths: ["reason/**", "eval/**", ".github/workflows/slm.yml"]
+    paths: ["reason/**", "eval/**", "ask/**", ".github/workflows/slm.yml"]
   workflow_dispatch:
 
 jobs:
@@ -56,6 +56,10 @@ jobs:
         run: |
           python -m eval.run_blind --tag current | tail -1
           python -m eval.run_blind --smart --tag current | tail -45
+      - name: Capability set (present state, what-if, advice, safety log, emergency) with the SLM
+        run: |
+          python -m eval.run_blind --file capability_questions.yaml --tag current | tail -1
+          python -m eval.run_blind --file capability_questions.yaml --smart --tag current | tail -45
       - name: Golden exam with SMART path
         run: |
           python -m eval.run_golden --smart | tail -40

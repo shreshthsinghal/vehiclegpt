@@ -11,7 +11,12 @@ import re
 NUM_RE = re.compile(r"-?\d+(?:\.\d+)?")
 
 FOLLOW = {
-    "not_recorded": ["Show my charging history", "Any fault codes?", "How much range do I have left?"],
+    "capabilities": ["How is my car right now?", "Can I drive 150 km on this charge?", "Show my safety log"],
+    "emergency": ["Show my safety log", "How is my car right now?", "What happened before the warning?"],
+    "safety_log": ["What happened before the warning?", "Any fault codes?", "How is my car right now?"],
+    "what_if": ["How can I improve my range?", "How long to charge to 80% at home?", "80 vs 110 km/h on the highway"],
+    "improve": ["How much range if I turn off the AC?", "80 vs 110 km/h on the highway", "Any repairs I should do?"],
+    "not_recorded": ["What can you do?", "Any fault codes?", "How much range do I have left?"],
     "vehicle_status_now": ["Why has my range dropped?", "Check battery health", "Any fault codes?"],
     "range_drop": ["When did my efficiency get worse?", "Compare city and highway driving", "How much energy did the AC use?"],
     "efficiency_change": ["Show my tyre pressure trend", "Why has my range dropped?", "Any fault codes?"],
@@ -45,6 +50,22 @@ def _num(v) -> str:
     return str(v)
 
 
+NAMES = {"range_drop": "why your range changed", "efficiency_change": "when efficiency got worse",
+         "adas_events": "lane-assist events", "before_event": "what led to a warning", "segment_compare": "city vs highway",
+         "signal_trend": "how a signal changed over time", "dtc_lookup": "fault codes", "charging_history": "charging history",
+         "vehicle_status_now": "the car's current state", "trip_stats": "trip statistics", "data_quality": "missing data",
+         "health_summary": "a health summary", "what_if": "a what-if scenario", "improve": "ways to improve range",
+         "safety_log": "the safety log", "not_recorded": "something not recorded", "emergency": "an emergency"}
+ASK = {"range_drop": "Why has my range dropped?", "efficiency_change": "When did my efficiency get worse?",
+       "adas_events": "Why did lane assist switch off?", "before_event": "What happened before the warning?",
+       "segment_compare": "Compare city and highway driving", "signal_trend": "How has battery temperature changed?",
+       "dtc_lookup": "Any fault codes?", "charging_history": "Show my charging history",
+       "vehicle_status_now": "How is my car right now?", "trip_stats": "How many trips this week?",
+       "data_quality": "Is any data missing?", "health_summary": "Any repairs I should do?",
+       "what_if": "Can I drive 150 km on this charge?", "improve": "How can I improve my range?",
+       "safety_log": "Show my safety log", "not_recorded": "What can you do?", "emergency": "Emergency help", "capabilities": "What can you do?"}
+
+
 def a_recs(ans) -> bool:
     return ans.what.startswith("Based on")
 
@@ -55,7 +76,79 @@ def build(ans) -> dict:
     hero, cards, say = None, [], ""
     first = re.split(r"(?<=[.!?])\s", ans.what.strip())[0] if ans.what else ""
 
-    if i == "vehicle_status_now" and "range" in f:
+    plan = ans.plan or {}
+    if i == "vehicle_status_now" and plan.get("signals") and not plan.get("snapshot"):
+        from reason.catalogue import CATALOGUE, TYRES
+        ks = [k for k in plan["signals"] if k in f]
+        icon = lambda k: ("tyre" if k in TYRES else "battery" if k in ("soc", "soh", "range", "lv_voltage", "batt_voltage", "charging")
+                          else "thermo" if "temp" in k else "spark" if k in ("camera", "visibility") else "dot")
+        if ks:
+            k0 = ks[0]
+            unit = CATALOGUE[k0][2] if CATALOGUE[k0][4] is None else ""
+            if len([k for k in ks if k in TYRES]) > 1:
+                hero = {"value": _num(min(f[k] for k in ks if k in TYRES)), "unit": "kPa", "label": "lowest tyre pressure right now"}
+            else:
+                hero = {"value": _num(f[k0]), "unit": unit if unit not in ("%",) else "%", "label": f"{CATALOGUE[k0][1]} right now"}
+            for k in ks[:4]:
+                v = f[k]
+                cards.append({"icon": icon(k), "name": CATALOGUE[k][1][0].upper() + CATALOGUE[k][1][1:],
+                              "value": f"{_num(v)} {CATALOGUE[k][2]}".strip() if CATALOGUE[k][4] is None else str(v),
+                              "tone": "ok" if (k in TYRES and isinstance(v, (int, float)) and v >= 225) or v in ("OK", "normal") else ""})
+        say = first
+    elif i == "vehicle_status_now" and plan.get("snapshot") and "range" in f:
+        hero = {"value": _num(f["range"]), "unit": "km", "label": "estimated range right now"}
+        for k, ic, nm in (("soc", "battery", "Battery"), ("gear", "dot", "Gear"), ("speed", "road", "Speed"),
+                          ("batt_temp", "thermo", "Battery temperature"), ("motor_temp", "thermo", "Motor"),
+                          ("outside_temp", "dot", "Outside"), ("lv_voltage", "battery", "12 V battery"), ("camera", "spark", "Front camera")):
+            if k in f:
+                from reason.catalogue import CATALOGUE
+                unit = CATALOGUE[k][2] if CATALOGUE[k][4] is None else ""
+                cards.append({"icon": ic, "name": nm, "value": f"{_num(f[k])} {unit}".strip() if unit else str(f[k])})
+        cards = cards[:4]
+        say = f"Your car is fine right now: range {_num(f['range'])} kilometres, battery {_num(f.get('soc', ''))} percent."
+    elif i == "what_if" and "arrive" in f:
+        hero = {"value": f"{_num(f['arrive'])}%", "unit": "", "label": "battery left on arrival"}
+        cards += [{"icon": "road", "name": "Trip", "value": f"{_num(f['dist'])} km"},
+                  {"icon": "battery", "name": "Energy needed", "value": f"{_num(f['need'])} kWh", "sub": f"{_num(f['pct'])}% of the battery"},
+                  {"icon": "spark", "name": "Consumption", "value": f"{_num(f['cons0'])} kWh/100 km", "sub": f"model R² {_num(f['r2'])}"}]
+        if "stop_min" in f:
+            cards.append({"icon": "battery", "name": "Charging stop", "value": f"{_num(f['stop_min'])} min", "tone": "warn"})
+        elif "ac_gain" in f:
+            cards.append({"icon": "snow", "name": "AC off would save", "value": f"{_num(f['ac_gain'])}%", "tone": "ok"})
+        say = first
+    elif i == "what_if" and "mins" in f:
+        hero = {"value": _num(f["mins"]), "unit": "min", "label": f"to reach {_num(f['target'])}%"}
+        cards += [{"icon": "battery", "name": "Energy to add", "value": f"{_num(f['need'])} kWh"},
+                  {"icon": "spark", "name": "Charging power", "value": f"{_num(f['pw'])} kW", "sub": "typical for your sessions"}]
+        say = first
+    elif i == "what_if" and "rng1" in f:
+        hero = {"value": f"{_num(f['diff'])}%", "unit": "", "label": "more energy per km at the higher speed"}
+        cards += [{"icon": "road", "name": f"At {_num(f['spd0'])} km/h", "value": f"{_num(f['rng0'])} km range", "sub": f"{_num(f['cons0'])} kWh/100 km", "tone": "ok"},
+                  {"icon": "road", "name": f"At {_num(f['spd1'])} km/h", "value": f"{_num(f['rng1'])} km range", "sub": f"{_num(f['cons1'])} kWh/100 km", "tone": "warn"}]
+        say = first
+    elif i == "what_if" and "rng0" in f:
+        hero = {"value": _num(f["rng0"]), "unit": "km", "label": "range in this scenario"}
+        cards += [{"icon": "road", "name": "Your usual driving", "value": f"{_num(f['base_rng'])} km"},
+                  {"icon": "battery", "name": "On a full battery", "value": f"{_num(f['full0'])} km"}]
+        if "gain_km" in f:
+            cards.append({"icon": "snow", "name": "AC off adds", "value": f"{_num(f['gain_km'])} km", "tone": "ok"})
+        say = first
+    elif i == "improve":
+        hero = {"value": _num(f["base_full"]), "unit": "km", "label": "per full charge with your usual driving"}
+        for t in (plan.get("tips") or [])[:4]:
+            cards.append({"icon": "bulb", "name": t["title"], "value": t["value"], "tone": "ok"})
+        say = first + " " + ans.why[0]
+    elif i == "safety_log":
+        hero = {"value": _num(f["n_high"]), "unit": "", "label": f"high-importance safety events · {_num(f['n_all'])} in total"}
+        for row in (plan.get("log") or [])[:4]:
+            cards.append({"icon": "warn" if row["sev"] == "high" else "dot", "name": row["t"], "value": row["text"][:80],
+                          "small": True, "tone": "warn" if row["sev"] == "high" else ""})
+        say = first
+    elif i == "emergency":
+        say = ans.what + " " + " ".join((plan.get("emergency") or {}).get("steps", [])[:3])
+    elif i == "capabilities":
+        say = first
+    elif i == "vehicle_status_now" and "range" in f:
         hero = {"value": _num(f["range"]), "unit": "km", "label": "estimated range remaining"}
         if "state_of_charge" in f:
             cards.append({"icon": "battery", "name": "Battery", "value": f"{_num(f['state_of_charge'])}%",
@@ -198,10 +291,16 @@ def build(ans) -> dict:
         for p in ans.proof[:4]:
             cards.append({"icon": "dot", "name": p[0], "value": str(p[1])})
     follow = FOLLOW.get(i, DEFAULT_FOLLOW)
+    alts = (ans.plan or {}).get("alternatives") or []
+    understood = None
+    if alts:
+        understood = f"I understood this as {NAMES.get(i, i)}. Not what you meant?"
+        follow = [ASK[a] for a in alts if a in ASK][:3] or follow
     if "min_on" in f:
         follow = ["Was there any problem during rain?", "Why did lane assist switch off?", "How much range do I have left?"]
-    out = {"hero": hero, "cards": cards, "say": say or first, "follow": follow,
-           "kind": "refuse" if i in REFUSE else ("info" if i == "not_recorded" else ("search" if i == "related_records" else "answer"))}
+    out = {"hero": hero, "cards": cards, "say": say or first, "follow": follow, "understood": understood,
+           "emergency": plan.get("emergency"),
+           "kind": "refuse" if i in REFUSE else ("emergency" if i == "emergency" else "info" if i in ("not_recorded", "capabilities") else ("search" if i == "related_records" else "answer"))}
     out["ui_verified"] = ui_verified(out, ans)
     return out
 

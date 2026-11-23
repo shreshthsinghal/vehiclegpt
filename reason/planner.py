@@ -17,10 +17,25 @@ import time
 import urllib.request
 
 from .dates import IST, Window
+from .catalogue import CATALOGUE
 from .playbooks import PLAYBOOKS, SIGNALS
 
-INTENTS = [k for k in PLAYBOOKS if k not in ("unsafe_command", "privacy")]
-METRICS = ["none", "longest", "shortest", "worst_eff", "total", "speed_compare", "tyre_last_hwy", "braking_rain"]
+INTENTS = [k for k in PLAYBOOKS if k not in ("unsafe_command", "privacy", "capabilities")]
+SIGNAL_NAMES = list(dict.fromkeys([*SIGNALS.keys(), *CATALOGUE.keys()]))
+METRICS = ["none", "longest", "shortest", "worst_eff", "total", "speed_compare", "tyre_last_hwy", "braking_rain",
+           "per_month", "soc_per_100", "usage", "avg_speed", "efficiency", "trip_heat"]
+ALWAYS = ["out_of_scope", "what_if", "emergency", "not_recorded", "vehicle_status_now"]   # rule-first intents the SLM may also pick
+TOPICS = ["general", "brake_failure", "stuck_accelerator", "fire", "overheat", "blowout", "flood", "crash", "power_loss"]
+# Second, tiny form used only for what-if questions (the regex parser fills the same fields; the SLM covers wording like
+# "two hundred kilometres" or "a hundred and ten").
+SCENARIO_SCHEMA = {"type": "object", "properties": {
+    "distance_km": {"type": "integer", "minimum": 0, "maximum": 2000},
+    "speed_kmh": {"type": "integer", "minimum": 0, "maximum": 200},
+    "ac": {"enum": ["default", "on", "off"]},
+    "target_soc": {"type": "integer", "minimum": 0, "maximum": 100}},
+    "required": ["distance_km", "speed_kmh", "ac", "target_soc"], "additionalProperties": False}
+TOPIC_SCHEMA = {"type": "object", "properties": {"topic": {"enum": TOPICS}}, "required": ["topic"],
+                "additionalProperties": False}
 WINDOWS = ["default", "today", "yesterday", "last_7_days", "last_14_days", "last_30_days", "this_month", "all",
            "first_2_weeks", "specific_date"]
 
@@ -28,7 +43,7 @@ SCHEMA = {
     "type": "object",
     "properties": {
         "intent": {"enum": INTENTS},
-        "signal": {"enum": ["none", *SIGNALS.keys()]},
+        "signal": {"enum": ["none", *SIGNAL_NAMES]},
         "metric": {"enum": METRICS},
         "window": {"enum": WINDOWS},
         "date": {"type": "string", "maxLength": 10},
@@ -42,9 +57,12 @@ You never answer the question and never invent data. Choose:
 intent: range_drop (why range fell) | efficiency_change (when efficiency got worse) | adas_events (driver-assist
 disengagements) | before_event (what led to a warning or fault) | segment_compare (city vs highway, weekday vs weekend)
 | signal_trend (how one measured signal behaved: max, average, trend, energy) | dtc_lookup (fault codes) |
-charging_history (charging sessions) | vehicle_status_now (current values) | trip_stats (trips: longest, worst,
-totals, speed) | data_quality (missing data) | health_summary (overall problems, service report) | out_of_scope
-(not about this vehicle's data).
+charging_history (charging sessions) | vehicle_status_now (current value of anything: tyres, gear, camera, battery
+health now) | trip_stats (trips: longest, worst, totals, speed, per month, usage) | data_quality (missing data) |
+health_summary (overall problems, repairs, habits) | what_if (hypothetical: can I drive X km, range at a speed, AC off,
+time to charge) | improve (how to get more range) | safety_log (safety-related events) | emergency (the driver is in
+danger NOW: brakes, fire, smoke, crash, flood, tyre burst) | not_recorded (something the car does not record: music,
+drive mode, horn, accidents) | out_of_scope (not about this vehicle).
 signal: which measurement, or none. metric: for trip_stats, else none.
 window: the time the question refers to; use specific_date with date YYYY-MM-DD when a calendar date is named,
 otherwise date "". Use default when no time is mentioned."""
@@ -62,6 +80,12 @@ EXAMPLES = [
      {"intent": "data_quality", "signal": "none", "metric": "none", "window": "yesterday", "date": ""}),
     ("how much juice is left",
      {"intent": "vehicle_status_now", "signal": "state_of_charge", "metric": "none", "window": "default", "date": ""}),
+    ("would a hundred and fifty kilometre drive be ok with what's left",
+     {"intent": "what_if", "signal": "none", "metric": "none", "window": "default", "date": ""}),
+    ("the pedal goes all the way down and the car won't slow",
+     {"intent": "emergency", "signal": "none", "metric": "none", "window": "default", "date": ""}),
+    ("is the dashcam ok",
+     {"intent": "vehicle_status_now", "signal": "camera", "metric": "none", "window": "default", "date": ""}),
     ("what is the best pizza in goa",
      {"intent": "out_of_scope", "signal": "none", "metric": "none", "window": "default", "date": ""}),
 ]
@@ -77,7 +101,7 @@ def _chatml(question: str) -> str:
 def validate(plan: dict) -> dict:
     """Second line of defence after the grammar: only known values pass."""
     out = {"intent": plan.get("intent") if plan.get("intent") in INTENTS else None,
-           "signal": plan.get("signal") if plan.get("signal") in SIGNALS else None,
+           "signal": plan.get("signal") if plan.get("signal") in SIGNAL_NAMES else None,
            "metric": plan.get("metric") if plan.get("metric") in METRICS[1:] else None,
            "window": plan.get("window") if plan.get("window") in WINDOWS else "default",
            "date": plan.get("date") or ""}
@@ -125,13 +149,15 @@ class SlmPlanner:
             pass
         return (time.perf_counter() - t0) * 1000
 
-    def raw(self, question: str, candidates: list | None = None) -> tuple[dict, dict]:
-        schema = SCHEMA
-        if candidates:                     # retrieval-augmented planning: only the router's top candidates are allowed
-            allowed = [c for c in candidates if c in INTENTS] + ["out_of_scope"]
-            schema = json.loads(json.dumps(SCHEMA))
-            schema["properties"]["intent"] = {"enum": list(dict.fromkeys(allowed))}
-        body = {"prompt": _chatml(question[:300]), "json_schema": schema, "n_predict": 64, "temperature": 0.0,
+    def raw(self, question: str, candidates: list | None = None, schema: dict | None = None,
+            prompt: str | None = None) -> tuple[dict, dict]:
+        if schema is None:
+            schema = SCHEMA
+            if candidates:                 # retrieval-augmented planning: router's top candidates + rule-first intents
+                allowed = [c for c in candidates if c in INTENTS] + [a for a in ALWAYS if a in INTENTS or a == "out_of_scope"]
+                schema = json.loads(json.dumps(SCHEMA))
+                schema["properties"]["intent"] = {"enum": list(dict.fromkeys(allowed))}
+        body = {"prompt": prompt or _chatml(question[:300]), "json_schema": schema, "n_predict": 64, "temperature": 0.0,
                 "cache_prompt": True, "stop": ["<|im_end|>"]}
         req = urllib.request.Request(self.url + "/completion", data=json.dumps(body).encode(),
                                      headers={"Content-Type": "application/json"})
@@ -157,4 +183,26 @@ class SlmPlanner:
         if w is not None:
             p["window_override"] = (w.start, w.end, w.label)
         p["slm"] = stats
+        try:
+            if p["intent"] == "what_if":           # second tiny form: trip distance, speed, AC, charge target
+                sc, st2 = self.raw(question, schema=SCENARIO_SCHEMA, prompt=_form(question, SCENARIO_HINT))
+                p.update({k: v for k, v in sc.items() if v not in (0, "default")})
+                p["slm"]["second_ms"] = st2["wall_ms"]
+            elif p["intent"] == "emergency":
+                tp, st2 = self.raw(question, schema=TOPIC_SCHEMA, prompt=_form(question, TOPIC_HINT))
+                p["topic"] = tp.get("topic") if tp.get("topic") in TOPICS else "general"
+                p["slm"]["second_ms"] = st2["wall_ms"]
+        except Exception:                          # noqa: BLE001  the regex parser still fills these fields
+            pass
         return p
+
+
+SCENARIO_HINT = ("Extract numbers from a driver's what-if question. distance_km: trip length in km (0 if none). "
+                 "speed_kmh: driving speed (0 if none). ac: on/off if mentioned, else default. target_soc: charge "
+                 "target in percent (0 if none).")
+TOPIC_HINT = "Classify the driver's emergency: " + ", ".join(TOPICS) + "."
+
+
+def _form(question: str, hint: str) -> str:
+    return (f"<|im_start|>system\n{hint}<|im_end|>\n<|im_start|>user\n{question[:300]}<|im_end|>\n"
+            f"<|im_start|>assistant\n<think>\n\n</think>\n\n")
