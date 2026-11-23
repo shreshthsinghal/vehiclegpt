@@ -52,6 +52,10 @@ jobs:
             --cache-type-k q8_0 --cache-type-v q8_0 --host 127.0.0.1 --port 8080 > server.log 2>&1 &
           for i in $(seq 1 120); do curl -sf http://127.0.0.1:8080/health && break; sleep 1; done
           echo; grep -iE "buffer size|repack|n_ctx" server.log | head -12; tail -5 server.log
+      - name: Blind test (untuned) - FAST only and as deployed with the SLM
+        run: |
+          python -m eval.run_blind | tail -1
+          python -m eval.run_blind --smart | tail -45
       - name: Golden exam with SMART path
         run: |
           python -m eval.run_golden --smart | tail -40
