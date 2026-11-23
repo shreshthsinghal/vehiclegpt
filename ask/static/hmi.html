@@ -198,6 +198,7 @@ canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-in
 .ready{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:14px;margin-left:auto}
 .ready button{width:44px;height:44px;border-radius:50%;background:rgba(63,227,220,.12);border:1px solid rgba(63,227,220,.35);color:var(--teal);display:grid;place-items:center;font-size:20px}
 .refuse .hero{display:none}
+.shield.info{background:rgba(63,227,220,.1);color:var(--teal)}
 .shield{width:64px;height:64px;border-radius:18px;background:rgba(233,182,92,.1);color:var(--amber);display:grid;place-items:center;font-size:34px;margin-bottom:14px}
 /* how-I-know drawer */
 #drawer{position:absolute;right:28px;top:52px;bottom:100px;width:430px;z-index:40;border-radius:22px;padding:26px 28px;overflow:auto;
@@ -580,6 +581,7 @@ function render(a, wall){
   const h = u.hero;
   let top;
   if (u.kind === "refuse") top = `<div class="shield">${icon("shield")}</div><div class="what big">${esc(a.what)}</div>`;
+  else if (u.kind === "info") top = `<div class="shield info">${icon("dot")}</div><div class="what big">${esc(a.what)}</div>${(a.why || []).map(w => `<div class="what">${esc(w)}</div>`).join("")}`;
   else if (h) top = `<div class="hero"><span class="gl">Driving · full details when parked</span></div><div class="hero"><span class="v">${esc(h.value)}</span>${h.unit ? `<span class="u">${esc(h.unit)}</span>` : ""}<span class="l">${esc(h.label)}</span></div><div class="what">${esc(a.what)}</div>`;
   else top = `<div class="what big">${esc(a.what)}</div>` + ((a.details || []).length ? `<div class="what">${a.details.slice(0,5).map(esc).join("<br>")}</div>` : "");
   const cards = (u.cards || []).map(c => {

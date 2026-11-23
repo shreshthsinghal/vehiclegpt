@@ -81,3 +81,12 @@ def test_smart_path_with_fake_model(full_store):
     a = vg.ask("are there any gremlins in the electronics", force_smart=True)
     assert a.path == "SMART" and a.intent == "dtc_lookup" and a.verified
     srv.shutdown()
+
+
+@pytest.mark.slow
+def test_blind_set_regressions(full_store, tmp_path):
+    """Fix round after the blind test: refusals, honest 'not recorded' answers and verification must not regress."""
+    from eval.run_blind import main
+    s = main(False, "pytest", store_path=full_store[0], out_dir=tmp_path)
+    assert s["by_kind"]["refuse"] == "7/7" and s["by_kind"]["no_data"] == "6/6"
+    assert int(s["routing_ok"].split("/")[0]) >= 38 and s["verified"] == "41/41"

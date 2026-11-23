@@ -17,6 +17,11 @@ range_drop:
   - what made the range estimate fall
   - what changed that hurt my range
   - why do i get fewer km per charge than before
+  - how has my range changed over the past few months
+  - has the full charge range gone down since i bought it
+  - range on a full battery now versus a couple of months ago
+  - is my average range worse than at the start
+  - how much range have i lost since october
 
 efficiency_change:
   - when did my consumption increase the most
@@ -43,6 +48,9 @@ adas_events:
   - driver assist cut out events
   - why did adas keep switching off last night
   - did the lane assist stop working
+  - did anything go wrong while driving in the rain
+  - problems with the car in wet weather
+  - how did the driver assistance behave in heavy rain
 
 before_event:
   - what happened before the warning
@@ -60,6 +68,13 @@ before_event:
   - why did the car reduce power and show a heat warning
   - what happened before power was limited
   - why did i get a high temperature alert
+  - what was the warning that came on yesterday evening
+  - which warning light showed up on friday and is it fixed
+  - explain the battery warning i got
+  - did the car have any overheating problems
+  - any heat related problems with the battery
+  - a light came on the dashboard on monday what was it
+  - is the warning from last week still a problem
 
 segment_compare:
   - compare consumption in town and on highways
@@ -70,6 +85,10 @@ segment_compare:
   - compare weekday and weekend efficiency
   - break down consumption by road type
   - efficiency difference between city and expressway
+  - how does the car behave on different types of roads
+  - rough city roads versus smooth highways
+  - performance on highway compared with city streets
+  - what kind of roads do i drive on
 
 signal_trend:
   - is battery health getting worse
@@ -82,6 +101,12 @@ signal_trend:
   - show the trend of state of health
   - how hot did the battery get
   - motor temperature over time
+  - is one tyre losing air quicker than the rest
+  - are any tyres leaking slowly
+  - tyre pressure loss for each wheel
+  - did i use the wipers this week
+  - how often were the wipers on
+  - was it raining while i drove
 
 dtc_lookup:
   - which fault codes are active
@@ -93,6 +118,10 @@ dtc_lookup:
   - how often does the coolant pump fault appear
   - what does code p1a20 mean
   - has the car reported any faults
+  - is something draining the battery while the car is parked
+  - battery drain overnight when parked
+  - 12 volt battery keeps going flat
+  - parasitic drain problems
 
 charging_history:
   - how many times did i fast charge
@@ -102,6 +131,13 @@ charging_history:
   - list dc fast charging events
   - when did i last charge the car
   - home charging history
+  - how much energy have i charged into the battery this month
+  - total kwh added from charging
+  - how long does a charge usually take at home
+  - average time plugged in per charge
+  - how frequently do i charge the car
+  - how many fast charges did i do last month
+  - is fast charging hurting my battery
 
 vehicle_status_now:
   - what is my battery level now
@@ -125,6 +161,21 @@ trip_stats:
   - how much did i drive yesterday
   - shortest trip this month
   - total energy used on trips last week
+  - what is my average driving speed
+  - how fast do i usually drive
+  - kilometres driven each month
+  - monthly mileage breakdown
+  - how often is the car driven
+  - do i use the car every day
+  - how many percent of battery do i use per 100 km
+  - battery percentage used per kilometre
+  - overall energy efficiency of my driving
+  - how efficient is my car overall
+  - was the battery hot on my long weekend drive
+  - battery temperature on the long road trip
+  - is the car driven regularly
+  - how regularly was the car driven
+  - was the car driven often or did it sit idle
 
 data_quality:
   - was any data missing
@@ -141,6 +192,13 @@ health_summary:
   - overall condition of the car
   - prepare a service summary
   - were there any issues in the first weeks
+  - what repairs does my car need
+  - should i service anything based on the data
+  - maintenance recommendations for my car
+  - how can i drive better to save energy
+  - what should i change in my driving
+  - tips to improve my car's long term health
+  - is there anything i should fix or upgrade
 
 unsafe_command:
   - turn off lane keep assist

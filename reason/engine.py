@@ -13,7 +13,17 @@ from remember.store import Store, load_key
 
 from .answer import Answer, verify
 from .playbooks import PLAYBOOKS, Ctx
-from .router import Router
+import re
+
+from .router import Router, english
+
+# A second question joined to the first ("..., and did it affect my battery health?") is answered too.
+SPLIT = re.compile(r"\?\s+(?=\w)|,?\s+and\s+(?=(?:what|how|did|does|do|is|was|were|which|when|why|where|has|have|are|any)\b)",
+                   re.IGNORECASE)
+# Second parts the first playbook already answers itself (no second analysis needed).
+ABSORBED = {"efficiency_change": r"weather|temperature|rain|hot|cold", "before_event": r"still|active|issue|problem|fixed",
+            "trip_stats": r"battery|energy|kwh|charge|percent|%", "charging_history": r"health|degrad|affect|batter",
+            "range_drop": r"why|cause|reason", "signal_trend": r"why|normal|unusual"}
 
 
 class VehicleGPT:
@@ -26,6 +36,30 @@ class VehicleGPT:
         self.warmup_ms = planner.warmup() if planner is not None else 0.0
 
     def ask(self, question: str, force_smart: bool = False) -> Answer:
+        original = question
+        question = english(question)
+        parts = [p.strip(" ,?") for p in SPLIT.split(question) if len(p.strip(" ,?").split()) >= 3]
+        ans = self._ask_one(question, force_smart)
+        if len(parts) >= 2 and ans.intent not in ("unsafe_command", "privacy", "not_recorded", "out_of_scope"):
+            for part in parts[1:2]:
+                if re.search(ABSORBED.get(ans.intent, r"^$"), part.lower()):
+                    continue
+                r = self.router.route(part)
+                if not r.fast or r.intent in (ans.intent, "out_of_scope", "privacy") or r.intent not in PLAYBOOKS:
+                    continue
+                sub = self._ask_one(part, False)
+                ans.what = f"{ans.what} {sub.what}".strip()
+                ans.why += sub.why
+                ans.facts += sub.facts
+                ans.evidence += sub.evidence
+                ans.details += sub.details
+                ans.next = ans.next or sub.next
+                ans.plan = {**ans.plan, "second_part": {"text": part, "intent": sub.intent}}
+                ans = verify(ans)
+        ans.question = original
+        return ans
+
+    def _ask_one(self, question: str, force_smart: bool = False) -> Answer:
         t0 = time.perf_counter()
         route = self.router.route(question)
         t1 = time.perf_counter()
@@ -77,6 +111,8 @@ class VehicleGPT:
         for e in self.store.events():
             if e["id"] in ids:
                 ans.fact(f"t{e['id']}", fmt_time(e["ts"]))
+                if e["code"]:
+                    ans.fact(f"c{e['id']}", e["code"], source="events table")
                 ans.details.append(f"{fmt_time(e['ts'])} {e['type'].replace('_', ' ').lower()} {e['code'] or ''}".strip())
         ans.evidence.append("meaning search (sqlite-vec) over all event descriptions")
         ans = verify(ans)

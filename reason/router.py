@@ -28,6 +28,47 @@ PRIVACY = re.compile(r"\b(who (drove|was driving|is driving)|which person|where 
                      r"(owner|driver)'?s? (name|phone|address|location)|phone number of)\b")
 
 
+# Driver/vehicle CONTROL requests (VehicleGPT is read-only), beyond the verbs above.
+CONTROL = re.compile(r"\b(roll (down|up)|(open|close|lower|raise|crack)\b[^.?!]*\bwindows?|windows? (down|up)|"
+                     r"play\b[^.?!]*\b(music|songs?|radio|playlist)|(volume|louder|loud music)|honk|"
+                     r"(remote(ly)?|take over|control)\b[^.?!]*\b(steer\w*|brak\w*|accelerat\w*|the car)|steer the car|"
+                     r"(silence|mute|hide|stop|suppress)\b[^.?!]*\b(warnings?|chimes?|alerts?|alarms?))\b")
+# Location history is personal data: refuse, like identifying people.
+PLACES = re.compile(r"\b((which|what) (places|locations)|places (i|we) (visit|went|go|drove)\w*|(where|places) (did|have) (i|we) "
+                    r"(go|gone|been|visit\w*|drive|drove|park\w*)|location history|most visited|visited the most|"
+                    r"where (was|is) (the car|it) parked)\b")
+# Things this vehicle's recorded data does not contain: answer honestly instead of guessing.
+NOT_RECORDED = [
+    ("navigation", r"(find|nearest|near me|nearby|locate|where (is|are)|show me|suggest)\b[^.?!]*charg\w* (stations?|points?)|"
+                   r"charg\w* (stations?|points?)\b[^.?!]*(near|on my way|on the way|nearby|around|route)|"
+                   r"route to|directions to|navigate|weather forecast|traffic (ahead|now|on my way)"),
+    ("media", r"\b(songs?|music|playlist|podcast|spotify|radio station)\b"),
+    ("drive_mode", r"\b(drive|driving) modes?\b|\b(eco|sport|comfort) mode\b"),
+    ("collision", r"\bcollision|\baeb\b|emergency brak\w* (system|assist)|forward warning"),
+    ("accident", r"\b(accident|crash\w*|airbags?|collided)\b"),
+    ("horn", r"\bhorn\b"),
+]
+# Common Hinglish words used in questions -> English (before routing and analysis).
+HINGLISH = [(r"\bhua tha kya\b|\bhui thi kya\b|\btha kya\b", "was there"), (r"\bkitn[aie]\b", "how much"),
+            (r"\bkab\b", "when"), (r"\bky[ou]n\b", "why"), (r"\bgaa?di\b", "car"), (r"\bbaa?rish\b", "rain"),
+            (r"\bchalai?ya\b", "drove"), (r"\bkam\b", "lower"), (r"\bzyada\b", "more"), (r"\bkya\b", ""),
+            (r"\bhai\b|\bhain\b|\btha\b|\bthi\b", ""), (r"\bmeri\b|\bmera\b", "my"), (r"\bkaisa\b|\bkaisi\b", "how")]
+
+
+def english(question: str) -> str:
+    q = question
+    for pat, rep in HINGLISH:
+        q = re.sub(pat, rep, q, flags=re.IGNORECASE)
+    return re.sub(r"\s+", " ", q).strip()
+
+
+def not_recorded(q: str) -> str | None:
+    for kind, pat in NOT_RECORDED:
+        if re.search(pat, q):
+            return kind
+    return None
+
+
 @dataclass
 class Route:
     intent: str
@@ -61,12 +102,15 @@ class Router:
                 f.write(json.dumps({"question": question, "intent": intent, "plan": plan}) + "\n")
 
     def route(self, question: str) -> Route:
-        q = question.lower()
-        if PRIVACY.search(q):
+        q = english(question).lower()
+        if PRIVACY.search(q) or PLACES.search(q):
             return Route("privacy", 1.0, 1.0, True, [])
-        if UNSAFE.search(q) and not re.search(r"\b(why|when|what happened|did .* (turn|switch))\b", q):
+        asks_history = re.search(r"\b(why|when|what happened|did .* (turn|switch)|how many|how often|which|was there|were there)\b", q)
+        if (UNSAFE.search(q) or CONTROL.search(q)) and not asks_history:
             return Route("unsafe_command", 1.0, 1.0, True, [])
-        sims = self.matrix @ embed(question)
+        if not_recorded(q):
+            return Route("not_recorded", 1.0, 1.0, True, [])
+        sims = self.matrix @ embed(q)
         best: dict[str, list] = {}
         for i in np.argsort(-sims)[:25]:
             best.setdefault(self.labels[i], []).append(float(sims[i]))

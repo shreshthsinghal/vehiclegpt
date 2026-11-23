@@ -28,12 +28,13 @@ def ok(expect: str, intent: str) -> bool:
     return intent == expect.split(":", 1)[1]
 
 
-def main(smart: bool, tag: str):
+def main(smart: bool, tag: str, store_path=None, out_dir=None):
     planner = None
     if smart:
         from reason.planner import SlmPlanner
         planner = SlmPlanner()
-    vg = VehicleGPT(planner=planner, learn=False)          # never learn from the blind set
+    kw = {"store_path": store_path} if store_path else {}
+    vg = VehicleGPT(planner=planner, learn=False, **kw)     # never learn from the blind set
     qs = yaml.safe_load(open(ROOT / "eval" / "blind_questions.yaml"))["questions"]
     rows, hit = [], 0
     for i, x in enumerate(qs, 1):
@@ -50,7 +51,7 @@ def main(smart: bool, tag: str):
     summary = {"mode": "smart" if smart else "fast-only", "routing_ok": f"{hit}/{len(qs)}",
                "by_kind": {k: f"{a}/{b}" for k, (a, b) in by.items()},
                "verified": f"{sum(r['verified'] for r in rows)}/{len(qs)}"}
-    out = ROOT / "eval" / "results" / f"blind_{tag}_{summary['mode']}.json"
+    out = (out_dir or ROOT / "eval" / "results") / f"blind_{tag}_{summary['mode']}.json"
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({"summary": summary, "rows": rows}, indent=1))
     print("BLIND " + json.dumps(summary))

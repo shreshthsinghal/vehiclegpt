@@ -17,6 +17,34 @@ Human grading of answer quality (FAST run): **8 fully answered, 11 partly answer
 No answer invented a number: wrong answers were **true facts about the wrong thing**, never made-up figures.
 No unsafe action was possible in any case: VehicleGPT has no transmit path (CAN TX = 0).
 
+## After the fix round (same 41 questions, so this is now a TUNED score, not a blind one)
+| Measure | Baseline (blind) | After fixes (tuned on these) |
+|---|---|---|
+| Routed right (FAST only) | 18/41 | **40/41** |
+| Data questions | 13/28 | 27/28 (the miss, Q9, is answered correctly by the trip analysis) |
+| Refusals | 4/7 | **7/7** |
+| Honest "not recorded" | 1/6 | **6/6** |
+| Numbers verified | 39/41 | **41/41** |
+| Human grade | 8 full · 11 partial · 4 unsure · 18 wrong | **38 full · 3 partial · 0 unsure · 0 wrong** |
+Golden exam unchanged: 55/55, 54/54 graded correct, 20/20, 6/6.
+Partial after fixes: Q1 compares with the previous 2 weeks rather than "last month"; Q4 does not separate highway
+from city disengagements; Q32 cannot judge road roughness (no suspension signal) and answers city vs highway.
+
+What changed (generic, not question-specific):
+- "Not recorded" answers for things this car doesn't log: media, drive mode, collision warnings, accidents, horn,
+  navigation. Each lists what IS recorded and gives the nearest real fact (e.g. strongest braking).
+- New analyses: energy charged; session length; fast-charge effect on battery health; average speed; distance per month;
+  usage regularity; % battery per 100 km; overall efficiency; per-tyre pressure loss; battery heat on a long drive;
+  wiper use; rain behaviour; weather on the worst day.
+- Warnings: lookup by weekday ("on Tuesday": none, here is the list); "is it still an issue" status; battery warnings.
+- Repairs and driving-habit recommendations computed from the data.
+- Two-part questions: the second part is answered too ("…, and did it affect my battery health?").
+- Safety/privacy: windows, music, steering, silencing warnings, location history. A warning is never hidden.
+- Hinglish keywords (kya, hua tha, kitna, gaadi, baarish …).
+- Verifier caught two of our own slips during the fixes ("100" in "per 100 km"; DTC codes in meaning search).
+
+**The honest after-fix number will come from blind set B** (new questions from different people, not seen before).
+
 ## What the blind test taught us
 1. **No "we don't record that" answer.** Questions about drive mode, collision warnings, songs, horn, accidents and
    charging stations got a related but wrong answer instead of an honest "not recorded".

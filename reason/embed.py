@@ -17,7 +17,10 @@ STOP = set("the a an my is are was were did do does of for to in on at and or it
 
 # Domain lexicon: many ways people say the same thing -> one canonical token (added, originals kept).
 SYN = {
-    r"\b(range|kilometres?|kms?|distance|far|mileage left|kilometers?)\b": " range ",
+    r"\b(range|distance (left|remaining)|how far can|mileage left)\b": " range ",
+    r"\b(distance|travell?ed|driven|kilometres? driven|km driven|usage|used|regularly|use the car)\b": " trip ",
+    r"\b(rain\w*|wet|wipers?|monsoon|downpour)\b": " rain ",
+    r"\b(put into|plugged in|charged into|energy added|added to the battery)\b": " charge ",
     r"\b(efficien\w*|consumption|kwh|energy use|energy per|economy|mileage)\b": " efficiency ",
     r"\b(fuel)\b": " efficiency ",
     r"\b(adas|lane ?keep\w*|lane assist|lka|driver assist\w*|autopilot|assistance|self.?driving|cruise)\b": " adas ",

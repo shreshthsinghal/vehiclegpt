@@ -11,6 +11,7 @@ import re
 NUM_RE = re.compile(r"-?\d+(?:\.\d+)?")
 
 FOLLOW = {
+    "not_recorded": ["Show my charging history", "Any fault codes?", "How much range do I have left?"],
     "vehicle_status_now": ["Why has my range dropped?", "Check battery health", "Any fault codes?"],
     "range_drop": ["When did my efficiency get worse?", "Compare city and highway driving", "How much energy did the AC use?"],
     "efficiency_change": ["Show my tyre pressure trend", "Why has my range dropped?", "Any fault codes?"],
@@ -42,6 +43,10 @@ def _num(v) -> str:
     if isinstance(v, float) and v.is_integer():
         return str(int(v))
     return str(v)
+
+
+def a_recs(ans) -> bool:
+    return ans.what.startswith("Based on")
 
 
 def build(ans) -> dict:
@@ -107,6 +112,56 @@ def build(ans) -> dict:
                               "sub": f.get("td" + i_, ""), "tone": "warn" if act else "", "small": True, "_a": act})
         cards = sorted(cards, key=lambda c: not c.pop("_a"))[:4]
         say = first
+    elif i == "trip_stats" and "avg" in f and "vmax" in f:
+        hero = {"value": _num(f["avg"]), "unit": "km/h", "label": "average driving speed"}
+        cards.append({"icon": "up", "name": "Top speed", "value": f"{_num(f['vmax'])} km/h"})
+        if "city_avg" in f:
+            cards.append({"icon": "city", "name": "City trips", "value": f"{_num(f['city_avg'])} km/h"})
+        say = first
+    elif i == "trip_stats" and "per" in f and "kwh100" in f:
+        hero = {"value": f"{_num(f['per'])}%", "unit": "", "label": "of the battery per 100 km"}
+        cards.append({"icon": "battery", "name": "Energy", "value": f"{_num(f['kwh100'])} kWh/100 km"})
+        if "best" in f:
+            cards += [{"icon": "down", "name": "Best trip", "value": f"{_num(f['best'])} kWh/100 km", "sub": f["best_d"], "tone": "ok"},
+                      {"icon": "up", "name": "Worst trip", "value": f"{_num(f['worst'])} kWh/100 km", "sub": f["worst_d"], "tone": "warn"},
+                      {"icon": "snow", "name": "Air-conditioning share", "value": f"{_num(f['ac'])}%"}]
+        say = first
+    elif i == "trip_stats" and "dd" in f and "span" in f:
+        hero = {"value": f"{_num(f['dd'])}/{_num(f['span'])}", "unit": "days", "label": "with at least one drive"}
+        cards += [{"icon": "road", "name": "Per day", "value": f"{_num(f['per_day'])} km"},
+                  {"icon": "city", "name": "Weekday trips", "value": f"{_num(f['wk_share'])}%"}]
+        say = first
+    elif i == "trip_stats" and any(k.startswith("km_") for k in f):
+        months = [(k[3:], f[k]) for k in f if k.startswith("km_")]
+        hero = {"value": _num(months[-1][1]), "unit": "km", "label": f"driven in {months[-1][0]}"}
+        for m, km in months:
+            cards.append({"icon": "road", "name": m, "value": f"{_num(km)} km", "sub": f"{_num(f['n_' + m])} trips · {_num(f['dd_' + m])} days"})
+        say = first
+    elif i == "trip_stats" and "bt" in f:
+        hero = {"value": _num(f["bt"]), "unit": "°C", "label": "battery peak on that drive"}
+        cards += [{"icon": "thermo", "name": "Your usual trip peak", "value": f"{_num(f['usual'])} °C", "tone": "ok"},
+                  {"icon": "dot", "name": "Outside", "value": f"{_num(f['amb'])} °C"}]
+        say = first
+    elif i == "charging_history" and "avg_min" in f:
+        hero = {"value": _num(f["avg_h"]), "unit": "h", "label": "average charging session"}
+        cards += [{"icon": "battery", "name": "Energy per session", "value": f"{_num(f['avg_kwh'])} kWh"},
+                  {"icon": "dot", "name": "Sessions", "value": _num(f["nsel"]), "sub": f"{_num(f['min_min'])}–{_num(f['max_min'])} min"}]
+        say = first
+    elif i == "charging_history" and "kwh" in f:
+        hero = {"value": _num(f["kwh"]), "unit": "kWh", "label": "charged into the battery"}
+        cards += [{"icon": "dot", "name": "Sessions", "value": _num(f["n"])},
+                  {"icon": "spark", "name": "DC fast charges", "value": _num(f["ndc"])},
+                  {"icon": "battery", "name": "Home AC charges", "value": _num(f["nac"])}]
+        if "soh_b" in f:
+            cards.append({"icon": "battery", "name": "Battery health", "value": f"{_num(f['soh_b'])}%", "tone": "ok", "sub": "no measurable change"})
+        say = first
+    elif i == "health_summary" and a_recs(ans):
+        for w in ans.why[:4]:
+            head, _, rest = w.partition(":")
+            cards.append({"icon": "bulb" if "habit" in ans.what else "warn", "name": head[:40], "value": rest.strip()[:90] or w[:90], "small": True})
+        say = ans.what + " " + ans.why[0]
+    elif i == "not_recorded":
+        say = first
     elif i == "trip_stats" and "km" in f:
         hero = {"value": _num(f["km"]), "unit": "km", "label": f"driven, {f.get('window', '')}"}
         cards += [{"icon": "road", "name": "Trips", "value": _num(f["n"])},
@@ -127,7 +182,7 @@ def build(ans) -> dict:
         for p in ans.proof[:4]:
             cards.append({"icon": "dot", "name": p[0], "value": str(p[1])})
     out = {"hero": hero, "cards": cards, "say": say or first, "follow": FOLLOW.get(i, DEFAULT_FOLLOW),
-           "kind": "refuse" if i in REFUSE else ("search" if i == "related_records" else "answer")}
+           "kind": "refuse" if i in REFUSE else ("info" if i == "not_recorded" else ("search" if i == "related_records" else "answer"))}
     out["ui_verified"] = ui_verified(out, ans)
     return out
 
