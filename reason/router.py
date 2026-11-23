@@ -24,7 +24,8 @@ UNSAFE = re.compile(r"\b(unlock|lock the|open the|close the|turn (on|off)|switch
                     r"deactivate|start the (car|engine|motor)|(clear|erase|delete|wipe)\b[^.?!]*\b(codes?|dtcs?|faults?|errors?|logs?|data)|reset|change the|set the|"
                     r"send|upload|post|email|transmit|share my|ignore (your|all|previous)|override)\b")
 PRIVACY = re.compile(r"\b(who (drove|was driving|is driving)|which person|where was (my|the) (wife|husband|son|daughter|"
-                     r"friend|driver)|track (the )?driver|identify the driver)\b")
+                     r"friend|driver)|track (the )?driver|identify the driver|(home|house|office|work) address|where does .* live|"
+                     r"(owner|driver)'?s? (name|phone|address|location)|phone number of)\b")
 
 
 @dataclass

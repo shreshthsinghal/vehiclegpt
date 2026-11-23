@@ -28,3 +28,5 @@ llama.cpp/
 
 # generated results (each run rewrites them)
 eval/results/*.json
+whisper/
+whisper.cpp/

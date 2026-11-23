@@ -1,0 +1,65 @@
+name: Voice (on-device speech)
+
+on:
+  push:
+    paths: ["ask/**", "eval/voice_eval.py", ".github/workflows/voice.yml"]
+  workflow_dispatch:
+
+jobs:
+  voice:
+    name: whisper.cpp ${{ matrix.size }} on 2 cores (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04-arm]
+        size: [tiny, base]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng ffmpeg
+      - name: CPU fingerprint
+        id: cpu
+        run: echo "id=$(lscpu | grep -E 'Model name|Flags' | md5sum | cut -c1-10)" >> $GITHUB_OUTPUT
+      - name: Cache whisper.cpp build
+        id: wcache
+        uses: actions/cache@v4
+        with:
+          path: whisper
+          key: whisper-${{ runner.arch }}-${{ steps.cpu.outputs.id }}-v1
+      - name: Build whisper-cli
+        if: steps.wcache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/whisper.cpp whisper
+          cmake -S whisper -B whisper/build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=ON -DWHISPER_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF
+          cmake --build whisper/build -j4 --target whisper-cli
+      - name: Cache speech model
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: whisper-model-${{ matrix.size }}-v1
+      - run: python scripts/get_model.py --speech ${{ matrix.size }}
+      - name: Keep only the model under test
+        run: ls models; find models -name 'ggml-*.en.bin' ! -name 'ggml-${{ matrix.size }}.en.bin' -delete; ls -la models
+      - name: Build vehicle store
+        run: python -m twin.generate > /dev/null && python -m remember.build | tail -3
+      - name: Spoken questions -> on-device text -> same analysis? (2 cores)
+        run: taskset -c 0,1 python -m eval.voice_eval
+      - name: Through the head-unit server (/api/listen)
+        run: |
+          nohup python -m ask.server > srv.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8765/api/status > /dev/null && break; sleep 1; done
+          curl -s http://127.0.0.1:8765/api/status | python -c "import json,sys; d=json.load(sys.stdin); print('stt available:', d['stt'])"
+          espeak-ng -v en-us -s 150 -w raw.wav "why has my range dropped" && ffmpeg -loglevel error -y -i raw.wav -ar 16000 -ac 1 -sample_fmt s16 q.wav
+          curl -s -X POST -H "Content-Type: audio/wav" --data-binary @q.wav http://127.0.0.1:8765/api/listen | tee listen.json; echo
+          python - <<'PY'
+          import json, urllib.request
+          t = json.load(open("listen.json"))["text"]
+          r = json.load(urllib.request.urlopen(urllib.request.Request("http://127.0.0.1:8765/api/ask", json.dumps({"question": t}).encode(), {"Content-Type": "application/json"})))
+          print("heard:", t, "| intent:", r["intent"], "| verified:", r["verified"], "| hero:", r["ui"]["hero"])
+          assert r["intent"] == "range_drop"
+          PY

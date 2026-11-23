@@ -588,6 +588,7 @@ def dtc_lookup(ctx: Ctx, q: str, plan: dict) -> Answer:
         desc = ctx.st.db.execute("SELECT description FROM dtc_dict WHERE code=?", (e["code"],)).fetchone()
         f(f"c{e['id']}", e["code"]); f(f"t{e['id']}", fmt_time(e["ts"])); f(f"td{e['id']}", fmt_date(e["ts"]))
         state = "active" if e in active else "passed self-test since"
+        f(f"st{e['id']}", "active" if e in active else "passed"); f(f"desc{e['id']}", desc[0] if desc else e["code"])
         a.details.append(f"{e['code']} {fmt_time(e['ts'])} ({e['ecu']}): {desc[0] if desc else ''} [{state}]")
     a.next = "Codes marked active should be checked at the next service." if active else ""
     return a

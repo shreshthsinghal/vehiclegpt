@@ -1,6 +1,8 @@
 """Download the on-device language model (one-time, ~0.5 GB) into models/.
 
   python scripts/get_model.py
+  python scripts/get_model.py --speech        # on-device speech-to-text: whisper.cpp + ggml-tiny.en (~75 MB)
+  python scripts/get_model.py --speech base   # larger, more accurate speech model (~142 MB)
 The download is the ONLY internet use; afterwards VehicleGPT runs fully offline.
 """
 import json
@@ -37,5 +39,53 @@ def main():
     return dest
 
 
+def _fetch(url: str, dest: Path):
+    print(f"downloading {url}")
+    req = urllib.request.Request(url, headers={"User-Agent": "vehiclegpt-setup"})
+    with urllib.request.urlopen(req) as r, open(dest, "wb") as f:
+        total = int(r.headers.get("Content-Length", 0))
+        done = 0
+        while chunk := r.read(1 << 20):
+            f.write(chunk)
+            done += len(chunk)
+            print(f"\r  {done / 1e6:7.1f} / {total / 1e6:.1f} MB", end="", flush=True)
+    print(f"\nsaved {dest}")
+
+
+def speech():
+    """whisper.cpp program + English speech model. Afterwards voice input works with no internet."""
+    import platform
+    import zipfile
+    size = sys.argv[sys.argv.index("--speech") + 1] if len(sys.argv) > sys.argv.index("--speech") + 1 else "tiny"
+    size = size if size in ("tiny", "base") else "tiny"
+    OUT.mkdir(exist_ok=True)
+    model = OUT / f"ggml-{size}.en.bin"
+    if not model.exists():
+        _fetch(f"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{model.name}", model)
+    else:
+        print(f"already present: {model}")
+    root = OUT.parent / "whisper"
+    if platform.system() == "Windows":
+        if not any(root.rglob("whisper-cli.exe")):
+            rel = json.load(urllib.request.urlopen(urllib.request.Request(
+                "https://api.github.com/repos/ggml-org/whisper.cpp/releases/latest", headers={"User-Agent": "vehiclegpt-setup"})))
+            asset = next(a for a in rel["assets"] if a["name"] == "whisper-bin-x64.zip")
+            zpath = OUT / asset["name"]
+            _fetch(asset["browser_download_url"], zpath)
+            zipfile.ZipFile(zpath).extractall(root)
+            zpath.unlink()
+        exe = next(root.rglob("whisper-cli.exe"))
+        print(f"whisper.cpp ready: {exe}")
+    else:
+        if not (any(root.rglob("whisper-cli"))):
+            print("Build whisper.cpp once (Linux/macOS):\n"
+                  "  git clone --depth 1 https://github.com/ggml-org/whisper.cpp whisper\n"
+                  "  cmake -S whisper -B whisper/build -DCMAKE_BUILD_TYPE=Release && cmake --build whisper/build -j --target whisper-cli")
+    print("Voice input is ready after a server restart: python -m ask.server")
+    return True
+
+
 if __name__ == "__main__":
+    if "--speech" in sys.argv:
+        sys.exit(0 if speech() else 1)
     sys.exit(0 if main() else 1)

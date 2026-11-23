@@ -25,6 +25,9 @@ from reason.engine import VehicleGPT
 from reason.playbooks import SIGNALS, TYRE_COLS, WARN_NAMES
 from remember.build import STORE
 from safety.guards import COUNTERS
+from ask import present, speech
+import yaml
+DTC_NAMES = yaml.safe_load((Path(__file__).resolve().parents[1] / "sense" / "dtc_dictionary.yaml").read_text())
 
 STATIC = Path(__file__).with_name("static")
 ROLES_FILE = STORE.parent / "roles.json"
@@ -96,15 +99,22 @@ class App:
             sets = self.st.events(["DTC_SET"])
             passes = self.st.events(["DTC_PASSED"])
             dtcs = [e["code"] for e in sets if not any(p["code"] == e["code"] and p["ts"] > e["ts"] for p in passes)]
+            _, spd = self.st.series(SIGNALS["speed"][0], now - 120, now + 1)
         vals = {f.name: f.value for f in a.facts}
+        names = DTC_NAMES
         return {"vehicle_clock": fmt_time(now), "soc": vals.get("state_of_charge"), "range_km": vals.get("range"),
                 "battery_temp": vals.get("battery_temp"), "tyres": [vals.get(c) for c in TYRE_COLS],
                 "warnings": [WARN_NAMES.get(c, c) for c in active], "active_dtcs": sorted(set(dtcs)),
-                **self.counters()}
+                "active_dtc_names": {c: names.get(c, c) for c in set(dtcs)},
+                "moving": bool(spd.size and spd[-1] > 2),
+                "stt": speech.available(), **self.counters()}
 
     def ask(self, question: str) -> dict:
         with self.lock:
-            return self.vg.ask(question[:300]).to_dict()
+            ans = self.vg.ask(question[:300])
+            d = ans.to_dict()
+            d["ui"] = present.build(ans)
+            return d
 
     def days(self) -> list:
         trips = self.st.table("trips")
@@ -236,7 +246,8 @@ def make_handler(app: App):
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; "
-                             "script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'")
+                             "script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; media-src 'self'")
+            self.send_header("Permissions-Policy", "microphone=(self)")
             for k, v in (extra or {}).items():
                 self.send_header(k, v)
             self.end_headers()
@@ -252,7 +263,9 @@ def make_handler(app: App):
         def do_GET(self):
             u = urllib.parse.urlparse(self.path)
             q = {k: v[0] for k, v in urllib.parse.parse_qs(u.query).items()}
-            if u.path in ("/", "/index.html"):
+            if u.path in ("/", "/hmi", "/hmi.html"):
+                return self._send(200, (STATIC / "hmi.html").read_bytes(), "text/html; charset=utf-8")
+            if u.path in ("/console", "/index.html"):
                 return self._send(200, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
             if not self._authorised(u.path):
                 return self._send(403, {"error": "this view needs the right role and PIN"})
@@ -281,6 +294,14 @@ def make_handler(app: App):
 
         def do_POST(self):
             u = urllib.parse.urlparse(self.path)
+            if u.path == "/api/listen":                       # on-device speech to text (audio never stored)
+                n = int(self.headers.get("Content-Length", 0))
+                if n > speech.MAX_BYTES:
+                    return self._send(413, {"error": "recording too long"})
+                try:
+                    return self._send(200, speech.transcribe(self.rfile.read(n)))
+                except Exception as exc:          # noqa: BLE001
+                    return self._send(400, {"error": str(exc), "text": ""})
             n = min(int(self.headers.get("Content-Length", 0)), 4096)
             try:
                 body = json.loads(self.rfile.read(n) or b"{}")

@@ -63,3 +63,30 @@ def test_role_based_access_and_mdf4(hmi):
     assert len(MDF(path).channels_db) > 100
     f = _get(base + "/api/fleet", "fleet", app.roles["fleet"])
     assert "no location" in f["contains"] and f["sharing_opt_in"] is False
+
+
+@pytest.mark.slow
+def test_head_unit_screen_and_ui_layer(hmi):
+    """Phase 7: the driver head-unit page is served at /, the console at /console, and every number the
+    head-unit shows (hero, factor cards, spoken line) is a registered fact."""
+    base, app = hmi
+    html = _get(base + "/", raw=True).decode()
+    assert 'id="orb"' in html and "http" not in html                     # fully offline page
+    assert "VehicleGPT" in _get(base + "/console", raw=True).decode()
+    for q in ["How much range do I have left?", "Why has my range dropped?", "When did my efficiency get worse?",
+              "Any fault codes?", "Compare city and highway driving", "What happened before the warning?",
+              "Is my battery healthy?", "unlock the doors", "what is the owner's home address"]:
+        req = urllib.request.Request(base + "/api/ask", data=json.dumps({"question": q}).encode())
+        a = json.loads(urllib.request.urlopen(req, timeout=60).read())
+        assert a["ui"]["ui_verified"], q
+        assert a["ui"]["follow"]
+    assert a["intent"] == "privacy" and a["ui"]["kind"] == "refuse"
+
+
+@pytest.mark.slow
+def test_listen_rejects_non_wav(hmi):
+    base, _ = hmi
+    req = urllib.request.Request(base + "/api/listen", data=b"not audio at all, definitely not a wav file......")
+    with pytest.raises(urllib.error.HTTPError) as e:
+        urllib.request.urlopen(req, timeout=10)
+    assert e.value.code == 400

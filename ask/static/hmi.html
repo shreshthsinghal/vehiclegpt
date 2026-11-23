@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VehicleGPT · Head unit</title>
+<style>
+:root{
+  --bg:#0a0d0f; --glass:rgba(28,34,38,.78); --glass2:rgba(40,47,52,.72); --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --text:#e9eef0; --mute:#8d989d; --dim:#5d686d; --teal:#3fe3dc; --teal2:#1fb8b0; --tealdeep:#0c4a48; --amber:#e9b65c; --red:#ff7a6b; --green:#1f8a4c;
+  --font:"Roboto","Segoe UI","Helvetica Neue",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#050607;overflow:hidden;font-family:var(--font);color:var(--text);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+svg.i{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- stage + optional dashboard bezel (demo framing only) ---------- */
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center}
+body.bezel #stage{width:1520px;height:860px}
+#bezel{display:none}
+body.bezel #bezel{display:block;position:absolute;inset:0;border-radius:6px;overflow:hidden;
+  background:linear-gradient(180deg,#b7c3c9 0%,#7f8d94 9%,#1b1f22 17%,#121517 60%,#0b0d0e 100%)}
+body.bezel #bezel:before{content:"";position:absolute;left:0;right:0;top:15%;height:46px;background:linear-gradient(180deg,#24292c,#15181a);
+  box-shadow:0 8px 20px rgba(0,0,0,.6)}
+.amb{position:absolute;height:3px;border-radius:3px;background:var(--teal);box-shadow:0 0 14px 2px rgba(63,227,220,.55);opacity:.55;transition:opacity .6s,box-shadow .6s}
+.amb.l{left:0;width:110px;top:56%}.amb.r{right:0;width:90px;top:73%}.amb.b{left:22%;right:22%;bottom:26px;height:2px;opacity:.25}
+body.live .amb{opacity:1;box-shadow:0 0 26px 5px rgba(63,227,220,.75)}
+#housing{position:absolute;inset:0}
+body.bezel #housing{left:110px;top:118px;width:1300px;height:740px;padding:10px;border-radius:30px;
+  background:linear-gradient(160deg,#2a2f33,#0c0e10 40%,#0c0e10);box-shadow:0 30px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.12)}
+#screen{position:relative;width:1280px;height:720px;border-radius:0;overflow:hidden;background:
+  radial-gradient(1200px 700px at 78% 30%,#1a2226 0%,#0e1215 55%,#090b0d 100%)}
+body.bezel #screen{border-radius:22px}
+#screen:after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 52%,rgba(255,255,255,.035) 52.2%,transparent 70%)}
+
+/* ---------- status bar ---------- */
+.status{position:absolute;left:28px;right:28px;top:14px;height:24px;display:flex;align-items:center;gap:14px;font-size:14px;color:var(--mute)}
+.status .brand{color:var(--text);font-weight:500;letter-spacing:.3px}
+.status .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;background:rgba(63,227,220,.08);color:var(--teal);font-size:12.5px;border:1px solid rgba(63,227,220,.18)}
+.pill.warn{background:rgba(233,182,92,.1);color:var(--amber);border-color:rgba(233,182,92,.25)}
+
+/* ---------- home tiles ---------- */
+.tile{position:absolute;border-radius:18px;background:var(--glass);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#car{left:28px;top:52px;width:262px;height:400px;padding:20px 22px;transition:opacity .4s,filter .4s}
+#car .row{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);letter-spacing:.6px}
+#car .soc{font-size:58px;font-weight:300;margin-top:10px;line-height:1}
+#car .soc small{font-size:24px;color:var(--mute);margin-left:2px}
+#car .bar{height:5px;border-radius:5px;background:rgba(255,255,255,.08);margin:16px 0 8px;overflow:hidden}
+#car .bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--teal2),var(--teal));width:0;transition:width 1.2s}
+#car .rng{font-size:15px;color:var(--mute)} #car .rng b{color:var(--text);font-weight:500;font-size:17px}
+#car svg.carsvg{width:218px;height:110px;margin:22px 0 6px}
+#car .health{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+#nav{left:306px;top:52px;width:300px;height:226px;overflow:hidden}
+#media{left:306px;top:292px;width:300px;height:160px;padding:18px 20px}
+#nav .banner{position:absolute;left:12px;top:12px;background:#1d7a47;color:#fff;border-radius:10px;padding:8px 14px 8px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+#nav .banner b{font-size:17px;font-weight:500} #nav .banner span{font-size:12px;opacity:.8;display:block}
+#nav .eta{position:absolute;left:0;right:0;bottom:0;padding:10px 16px;background:rgba(14,18,20,.92);font-size:14px;display:flex;justify-content:space-between;color:var(--mute)}
+#nav .eta b{color:var(--text);font-weight:500;font-size:16px}
+#media .art{width:58px;height:58px;border-radius:12px;background:conic-gradient(from 210deg,#1c5d63,#3fe3dc 30%,#20343a 60%,#1c5d63);float:left;margin-right:14px;position:relative}
+#media .art:after{content:"FM";position:absolute;inset:0;display:grid;place-items:center;font-size:13px;font-weight:700;color:#071214}
+#media .t{font-size:17px;padding-top:6px} #media .s{font-size:13px;color:var(--mute);margin-top:4px}
+#media .ctl{clear:both;display:flex;justify-content:center;gap:38px;padding-top:24px;font-size:22px;color:var(--text)}
+.demo{position:absolute;right:12px;bottom:8px;font-size:10px;color:var(--dim);letter-spacing:.4px}
+#media .demo{bottom:6px}
+#nav .demo{top:16px;bottom:auto;right:14px;color:#9fb0b6}
+#home-hint{position:absolute;left:870px;top:380px;width:300px;text-align:center;color:var(--mute);font-size:15px;transition:opacity .4s}
+#insight{position:absolute;left:800px;top:470px;width:420px;padding:16px 18px;display:flex;gap:14px;align-items:center;transition:opacity .4s}
+#insight .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(233,182,92,.12);color:var(--amber);font-size:22px;flex:none}
+#insight .h{font-size:12px;letter-spacing:.6px;color:var(--amber)} #insight .it{font-size:14.5px;margin-top:3px;color:#c9d2d5}
+#insight .chip{margin-left:auto;font-size:13px;padding:7px 12px;white-space:nowrap}
+.s-listen #insight,.s-think #insight,.s-answer #insight,.s-bye #insight{opacity:0;pointer-events:none}
+
+/* ---------- dock ---------- */
+.dock{position:absolute;left:0;right:0;bottom:0;height:86px;display:flex;align-items:stretch;justify-content:center;gap:6px;
+  background:linear-gradient(180deg,rgba(12,15,17,0),rgba(12,15,17,.85) 35%);border-top:1px solid var(--line)}
+.dock button{width:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:13.5px;color:var(--mute);position:relative}
+.dock button svg{font-size:25px}
+.dock button.on{color:var(--teal)} .dock button.on:before{content:"";position:absolute;top:-1px;left:30px;right:30px;height:2px;background:var(--teal);box-shadow:0 0 10px var(--teal)}
+
+/* ---------- the orb ---------- */
+#orb{position:absolute;width:120px;height:120px;left:960px;top:228px;z-index:30;cursor:pointer;
+  transition:left .7s cubic-bezier(.2,.8,.2,1),top .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1)}
+#orb .core{position:absolute;inset:26px;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#f2fffe 0%,#b9f3ef 14%,#55d9d1 36%,#14857f 64%,#06302f 100%);
+  box-shadow:0 0 34px rgba(63,227,220,.55),inset -6px -10px 18px rgba(0,0,0,.35)}
+#orb .halo{position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle,rgba(63,227,220,.32) 0%,rgba(63,227,220,0) 70%);animation:breathe 4.5s ease-in-out infinite}
+#orb svg.ring{position:absolute;inset:0;width:120px;height:120px;transition:opacity .4s}
+#orb svg.ring circle{fill:none;stroke:var(--teal);stroke-width:2.6;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(63,227,220,.8))}
+#orb .ell{position:absolute;left:-46px;right:-46px;top:6px;bottom:6px;border-radius:50%;border:3px solid rgba(63,227,220,.8);
+  box-shadow:0 0 18px rgba(63,227,220,.45),inset 0 0 18px rgba(63,227,220,.3);transform:rotate(-14deg) scale(.6);opacity:0;transition:opacity .6s,transform .7s}
+#orb .lbl{position:absolute;top:128px;left:-40px;right:-40px;text-align:center;font-size:16px;color:var(--text);transition:opacity .3s;white-space:nowrap}
+@keyframes breathe{0%,100%{transform:scale(.92);opacity:.75}50%{transform:scale(1.12);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 34px rgba(63,227,220,.55),inset -6px -10px 18px rgba(0,0,0,.35)}50%{box-shadow:0 0 60px rgba(63,227,220,.9),inset -6px -10px 18px rgba(0,0,0,.35)}}
+.s-think #orb svg.ring{animation:spin 1.1s linear infinite}
+.s-think #orb .core,.s-speak #orb .core{animation:pulse 1.2s ease-in-out infinite}
+.s-listen #orb{left:990px;top:250px;transform:scale(1.45)}
+.s-think #orb{left:900px;top:240px;transform:scale(1.35)}
+.s-answer #orb{left:1100px;top:84px;transform:scale(.78)}
+.s-answer #orb .ell{opacity:1;transform:rotate(-14deg) scale(1)}
+.s-answer #orb svg.ring{opacity:0}
+.s-listen #orb .lbl,.s-think #orb .lbl,.s-answer #orb .lbl,.s-onboard #orb .lbl,.s-mic #orb .lbl,.s-bye #orb .lbl{opacity:0}
+.s-onboard #orb,.s-mic #orb{opacity:.25}
+.s-bye #orb{left:1100px;top:84px;transform:scale(.78)}
+.s-bye #orb .ell{opacity:1;transform:rotate(-14deg) scale(1)}
+body.rest #orb .halo,body.rest #orb .core{animation-play-state:paused}
+body.eco #orb .halo{animation:none}
+@media (prefers-reduced-motion:reduce){#orb .halo{animation:none}#orb,#panel,.card{transition:none!important}}
+
+/* ---------- assistant panel ---------- */
+#panel{position:absolute;left:530px;top:52px;right:28px;bottom:100px;border-radius:22px;padding:34px 40px;z-index:20;
+  background:linear-gradient(135deg,rgba(34,40,44,.92),rgba(20,24,27,.9));border:1px solid var(--line);
+  box-shadow:0 20px 60px rgba(0,0,0,.55);opacity:0;transform:translateX(30px);pointer-events:none;transition:opacity .45s,transform .55s cubic-bezier(.2,.8,.2,1),left .55s}
+#panel:before{content:"";position:absolute;inset:0;border-radius:22px;pointer-events:none;background:linear-gradient(118deg,transparent 30%,rgba(255,255,255,.03) 30.2%,transparent 55%)}
+.s-listen #panel,.s-think #panel,.s-answer #panel,.s-bye #panel{opacity:1;transform:none;pointer-events:auto}
+.s-answer #panel{left:306px}
+.s-answer #car,.s-answer #nav,.s-answer #media{filter:blur(1px) brightness(.6)}
+.s-listen #nav,.s-think #nav,.s-listen #media,.s-think #media{filter:brightness(.6)}
+.s-listen #home-hint,.s-think #home-hint,.s-answer #home-hint,.s-bye #home-hint{opacity:0}
+.view{position:absolute;inset:34px 40px;opacity:0;pointer-events:none;transition:opacity .35s}
+.s-listen .v-listen,.s-think .v-think,.s-answer .v-answer,.s-bye .v-bye{opacity:1;pointer-events:auto}
+.x{position:absolute;right:18px;top:16px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--mute);background:rgba(255,255,255,.05);z-index:5;font-size:18px}
+.x:hover{color:var(--text)}
+
+/* listen */
+.v-listen h1{font-size:50px;font-weight:300;margin-top:50px}
+.v-listen p{font-size:20px;color:var(--mute);margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;max-width:360px}
+.chip{padding:9px 18px;border-radius:22px;background:rgba(255,255,255,.07);border:1px solid var(--line2);font-size:15px;transition:background .2s}
+.chip:hover{background:rgba(63,227,220,.14);border-color:rgba(63,227,220,.4)}
+.askbox{position:absolute;left:0;bottom:0;width:380px;display:flex;gap:8px}
+.askbox input{flex:1;height:46px;border-radius:24px;border:1px solid var(--line2);background:rgba(0,0,0,.25);color:var(--text);padding:0 18px;font:inherit;font-size:15px;outline:none}
+.askbox input:focus{border-color:rgba(63,227,220,.55)}
+.askbox button{width:46px;height:46px;border-radius:50%;background:var(--teal);color:#061413;display:grid;place-items:center;font-size:19px}
+.micnote{position:absolute;left:0;bottom:58px;font-size:12.5px;color:var(--dim)}
+canvas#wave{position:absolute;left:530px;width:722px;top:200px;height:240px;z-index:25;pointer-events:none;opacity:0;transition:opacity .4s}
+.s-listen canvas#wave,.s-speak canvas#wave{opacity:1}
+.s-answer canvas#wave{left:990px;top:40px;width:300px;height:170px}
+
+/* think */
+.qbubble{margin-top:70px;max-width:330px;padding:24px 26px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid var(--line2);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.qbubble .q{font-size:30px;font-weight:400;line-height:1.2}
+.steps{margin-top:18px;display:flex;flex-direction:column;gap:8px}
+.step{display:inline-flex;align-items:center;gap:9px;font-size:14px;color:var(--dim);transition:color .3s}
+.step i{width:8px;height:8px;border-radius:50%;background:var(--dim);transition:background .3s,box-shadow .3s}
+.step.on{color:var(--text)} .step.on i{background:var(--teal);box-shadow:0 0 8px var(--teal)}
+.step.done{color:var(--mute)} .step.done i{background:var(--teal2)}
+
+/* answer */
+.v-answer{display:flex;flex-direction:column}
+.hist{font-size:13.5px;color:var(--dim);margin-bottom:6px;max-width:640px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist b{color:var(--mute);font-weight:400}
+.v-answer>*{flex:none}
+.glance .cards .card:nth-child(n+3),.glance .chart,.glance .v-answer .what:not(.big),.glance .tip{display:none!important}
+.gl{display:none;margin-left:10px;font-size:12px;color:var(--amber);border:1px solid rgba(233,182,92,.3);border-radius:12px;padding:3px 9px;vertical-align:middle}
+.glance .gl{display:inline-block}
+.aq{font-size:15px;color:var(--mute);margin-bottom:6px;max-width:700px}
+.hero{display:flex;align-items:baseline;gap:10px}
+.hero .v{font-size:66px;font-weight:300;letter-spacing:-1px;line-height:1}
+.hero .u{font-size:30px;font-weight:300;color:var(--mute)}
+.hero .l{font-size:19px;color:var(--mute);margin-left:8px}
+.what{font-size:17px;line-height:1.45;color:#c9d2d5;max-width:640px;margin-top:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.what.big{font-size:26px;color:var(--text);line-height:1.3;margin-top:4px;font-weight:300;-webkit-line-clamp:4}
+.body{display:flex;gap:22px;margin-top:16px;flex:none}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;flex:1;align-content:start;max-width:540px}
+.card{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:16px;padding:10px 13px;min-height:68px;display:flex;gap:13px;align-items:center;
+  opacity:0;transform:translateY(10px);transition:opacity .45s,transform .45s}
+.card.in{opacity:1;transform:none}
+.card .ic{width:40px;height:40px;border-radius:12px;background:rgba(63,227,220,.1);color:var(--teal);display:grid;place-items:center;font-size:24px;flex:none}
+.card.warn .ic{background:rgba(233,182,92,.12);color:var(--amber)}
+.card .n{font-size:14px;color:var(--mute);line-height:1.2}
+.card .val{font-size:18px;margin-top:3px;font-weight:500}
+.card.warn .val,.card .val.hi{color:var(--amber)}
+.card .val.sm{font-size:14.5px;font-weight:400;color:var(--text);line-height:1.25}
+.card.ok .val{color:var(--teal)}
+.card .sub{font-size:12px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card>div:last-child{min-width:0}
+.bars{display:inline-flex;gap:3px;margin-right:8px;vertical-align:middle}
+.bars b{width:6px;height:12px;border-radius:2px;background:rgba(255,255,255,.12)}
+.bars b:nth-child(1){height:6px}.bars b:nth-child(2){height:8px}.bars b:nth-child(3){height:10px}.bars b:nth-child(4){height:12px}.bars b:nth-child(5){height:14px}
+.bars b.f{background:var(--amber)}
+.meter{height:4px;background:rgba(255,255,255,.08);border-radius:4px;margin-top:6px;overflow:hidden}.meter i{display:block;height:100%;background:var(--teal)}
+.chart{width:250px;flex:none;align-self:flex-start;background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:16px;padding:12px 12px 6px}
+.chart .t{font-size:12px;color:var(--mute);margin-bottom:6px}
+.chart svg{width:226px;height:120px;display:block}
+.tip{margin-top:14px;font-size:15px;color:#c9d2d5;display:flex;gap:10px;align-items:flex-start;max-width:690px;flex:none}
+.tip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tip svg{color:var(--amber);font-size:19px;margin-top:1px}
+.v-answer>.foot{margin-top:auto}.v-answer>.foot+.foot{margin-top:0}
+.foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:12px}
+.follow{display:flex;gap:10px;flex-wrap:wrap}
+.follow .chip{font-size:14.5px;padding:9px 16px}
+.trust{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--teal);padding:6px 12px;border-radius:16px;background:rgba(63,227,220,.07);border:1px solid rgba(63,227,220,.18)}
+.trust.bad{color:var(--amber);background:rgba(233,182,92,.08);border-color:rgba(233,182,92,.22)}
+.ready{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:14px;margin-left:auto}
+.ready button{width:44px;height:44px;border-radius:50%;background:rgba(63,227,220,.12);border:1px solid rgba(63,227,220,.35);color:var(--teal);display:grid;place-items:center;font-size:20px}
+.refuse .hero{display:none}
+.shield{width:64px;height:64px;border-radius:18px;background:rgba(233,182,92,.1);color:var(--amber);display:grid;place-items:center;font-size:34px;margin-bottom:14px}
+/* how-I-know drawer */
+#drawer{position:absolute;right:28px;top:52px;bottom:100px;width:430px;z-index:40;border-radius:22px;padding:26px 28px;overflow:auto;
+  background:rgba(16,20,22,.97);border:1px solid var(--line2);transform:translateX(470px);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+#drawer.open{transform:none}
+#drawer h3{font-size:18px;font-weight:500;margin-bottom:4px}
+#drawer h4{font-size:12px;color:var(--dim);letter-spacing:.8px;text-transform:uppercase;margin:18px 0 8px}
+#drawer li{font-size:14px;color:#c9d2d5;line-height:1.45;margin:0 0 8px 16px}
+#drawer table{width:100%;font-size:13.5px;border-collapse:collapse}
+#drawer td{padding:6px 0;border-bottom:1px solid var(--line);color:#c9d2d5;vertical-align:top}
+#drawer td:first-child{color:var(--mute);width:42%}
+#drawer .meta{font-size:12.5px;color:var(--mute);line-height:1.6}
+
+/* bye */
+.v-bye h1{font-size:44px;font-weight:300;margin-top:110px}.v-bye p{font-size:20px;color:var(--mute);margin-top:10px}
+
+/* ---------- modal cards (onboarding / mic / settings) ---------- */
+.modal{position:absolute;left:50%;top:48%;width:420px;transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;z-index:50;
+  padding:30px 30px 26px;border-radius:24px;text-align:center;background:linear-gradient(180deg,rgba(52,60,65,.93),rgba(30,35,39,.95));
+  border:1px solid var(--line2);box-shadow:0 30px 80px rgba(0,0,0,.6);transition:opacity .4s,transform .5s cubic-bezier(.2,.8,.2,1)}
+.s-onboard #m-onboard,.s-mic #m-mic,.s-settings #m-settings{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
+.modal h2{font-size:27px;font-weight:400}
+.modal .sub{font-size:16px;color:#c9d2d5;margin-top:6px}
+.modal p{font-size:15.5px;color:#c9d2d5;line-height:1.45;margin-top:16px}
+.modal .quote{font-size:16px;color:var(--text);margin-top:16px}
+.modal .mini{width:84px;height:84px;margin:22px auto 6px;position:relative}
+.modal .mini .core{position:absolute;inset:18px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#f2fffe 0%,#b9f3ef 14%,#55d9d1 36%,#14857f 64%,#06302f 100%);box-shadow:0 0 30px rgba(63,227,220,.55)}
+.modal .mini svg{position:absolute;inset:0;width:84px;height:84px}
+.modal .mini svg circle{fill:none;stroke:var(--teal);stroke-width:2.4;stroke-linecap:round}
+.btn{display:block;width:100%;height:46px;border-radius:24px;font-size:16px;margin-top:12px}
+.btn.p{background:var(--teal);color:#061413;font-weight:500;margin-top:22px;box-shadow:0 6px 20px rgba(63,227,220,.25)}
+.btn.s{border:1px solid rgba(255,255,255,.3);color:var(--text)}
+.micbig{width:76px;height:76px;margin:20px auto 4px;border-radius:50%;display:grid;place-items:center;background:rgba(63,227,220,.08);border:1px solid rgba(63,227,220,.35);color:var(--teal);font-size:34px;box-shadow:0 0 30px rgba(63,227,220,.2)}
+.fine{font-size:12.5px!important;color:var(--mute)!important;margin-top:6px!important}
+.sw{display:flex;justify-content:space-between;align-items:center;text-align:left;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px}
+.sw small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px}
+.tog{width:46px;height:26px;border-radius:14px;background:rgba(255,255,255,.15);position:relative;flex:none;transition:background .2s}
+.tog:after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}
+.tog.on{background:var(--teal2)}.tog.on:after{left:23px}
+#scrim{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .4s;z-index:45}
+.s-onboard #scrim,.s-mic #scrim,.s-settings #scrim{opacity:1;pointer-events:auto}
+#toast{position:absolute;left:50%;bottom:104px;transform:translateX(-50%);background:rgba(20,24,27,.96);border:1px solid var(--line2);border-radius:20px;padding:9px 18px;font-size:14px;color:#c9d2d5;opacity:0;transition:opacity .3s;z-index:60;pointer-events:none}
+#toast.on{opacity:1}
+</style>
+</head>
+<body class="bezel">
+<!-- icon set (inline, offline) -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-ev" viewBox="0 0 24 24"><path d="M3 15l2-5c.4-1 1.2-2 2.6-2h8.8c1.4 0 2.2 1 2.6 2l2 5v3H3z"/><circle cx="7.5" cy="18" r="1.8"/><circle cx="16.5" cy="18" r="1.8"/><path d="M12.5 9.5l-1.5 2.5h2l-1.5 2.5"/></symbol>
+  <symbol id="i-nav" viewBox="0 0 24 24"><path d="M12 3l7 18-7-4-7 4z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 15H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 4.4V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 0 1 0 4h-.1"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 2v20M4 7l16 10M20 7L4 17M9 3.5l3 2 3-2M9 20.5l3-2 3 2"/></symbol>
+  <symbol id="i-traffic" viewBox="0 0 24 24"><path d="M2 17l1.5-4c.3-.8.9-1.5 1.9-1.5h5.2c1 0 1.6.7 1.9 1.5l1.5 4v2.5H2z"/><path d="M11 9l1-3c.3-.8.9-1.5 1.9-1.5h5.2c1 0 1.6.7 1.9 1.5l1 3v6h-6"/><circle cx="5" cy="19.5" r="1"/><circle cx="11" cy="19.5" r="1"/></symbol>
+  <symbol id="i-tyre" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 10v4M6 10v4M10 10v4"/></symbol>
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M14 14.8V4a2 2 0 0 0-4 0v10.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></symbol>
+  <symbol id="i-city" viewBox="0 0 24 24"><path d="M3 21V9l5-3v15M8 21V4l7 3v14M15 21V11l6 2v8M2 21h20"/></symbol>
+  <symbol id="i-road" viewBox="0 0 24 24"><path d="M8 3L4 21M16 3l4 18M12 4v3M12 11v3M12 18v3"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></symbol>
+  <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M19 5L9 12l10 7zM5 5v14"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M5 5l10 7-10 7zM19 5v14"/></symbol>
+</svg>
+
+<div id="stage">
+  <div id="bezel"><i class="amb l"></i><i class="amb r"></i><i class="amb b"></i></div>
+  <div id="housing">
+  <div id="screen" class="s-home">
+    <div class="status">
+      <span class="brand">VehicleGPT</span>
+      <span class="pill" title="Nothing leaves the car"><svg class="i"><use href="#i-lock"/></svg>On-device · <span id="egress">0 B sent</span></span>
+      <span class="pill warn" id="warnpill" style="display:none"></span>
+      <span class="sp"></span>
+      <span id="clock">--</span>
+    </div>
+
+    <div class="tile" id="car">
+      <div class="row"><span>EV</span><span id="carstate">PARKED</span></div>
+      <div class="soc"><span id="soc">--</span><small>%</small></div>
+      <div class="bar"><i id="socbar"></i></div>
+      <div class="rng">Range <b id="range">--</b> km</div>
+      <svg class="carsvg" viewBox="0 0 240 110">
+        <defs>
+          <linearGradient id="cb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a5459"/><stop offset=".55" stop-color="#262c30"/><stop offset="1" stop-color="#15191b"/></linearGradient>
+          <linearGradient id="cw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9fb4bb"/><stop offset="1" stop-color="#2b3438"/></linearGradient>
+          <radialGradient id="cg" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#3fe3dc" stop-opacity=".45"/><stop offset="1" stop-color="#3fe3dc" stop-opacity="0"/></radialGradient>
+        </defs>
+        <ellipse cx="120" cy="92" rx="112" ry="12" fill="url(#cg)"/>
+        <path d="M12 74 Q12 58 38 53 L66 50 Q88 30 118 28 L158 28 Q182 30 199 48 L222 53 Q233 57 233 70 L233 76 Q231 81 224 81 L201 81 A21 21 0 0 0 159 81 L83 81 A21 21 0 0 0 41 81 L18 81 Q12 81 12 74Z" fill="url(#cb)" stroke="#5d6a70" stroke-width="1"/>
+        <path d="M76 50 Q94 35 118 33 L148 33 L148 50Z" fill="url(#cw)" opacity=".85"/>
+        <path d="M154 33 L160 33 Q178 35 191 50 L154 50Z" fill="url(#cw)" opacity=".85"/>
+        <path d="M20 66 L226 64" stroke="#3fe3dc" stroke-opacity=".5" stroke-width="1"/>
+        <circle cx="62" cy="81" r="16" fill="#0b0d0e" stroke="#4d585d" stroke-width="3"/><circle cx="62" cy="81" r="6" fill="#3b4449"/>
+        <circle cx="180" cy="81" r="16" fill="#0b0d0e" stroke="#4d585d" stroke-width="3"/><circle cx="180" cy="81" r="6" fill="#3b4449"/>
+        <path d="M222 58 h8" stroke="#bff7f3" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <div class="health" id="health"></div>
+    </div>
+
+    <div class="tile" id="nav">
+      <svg viewBox="0 0 300 226" width="300" height="226" style="position:absolute;inset:0">
+        <rect width="300" height="226" fill="#16201f"/>
+        <path d="M-10 160 Q80 130 140 150 T320 120" stroke="#123a3f" stroke-width="22" fill="none"/>
+        <g stroke="#2a3538" stroke-width="7" fill="none" stroke-linecap="round">
+          <path d="M20 -5 L60 230"/><path d="M-5 70 L310 40"/><path d="M110 -5 L170 230"/><path d="M230 -5 L250 230"/><path d="M-5 200 L310 185"/></g>
+        <g stroke="#222b2e" stroke-width="3" fill="none"><path d="M0 110 L300 95"/><path d="M80 0 L95 226"/><path d="M200 0 L205 226"/><path d="M0 30 L300 12"/></g>
+        <path d="M150 210 L138 152 L120 98 L196 88 L206 40" stroke="#3fa9ff" stroke-width="6" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="206" cy="40" r="7" fill="#fff" stroke="#3fa9ff" stroke-width="3"/>
+        <path d="M150 196 l-9 18 9-5 9 5z" fill="#fff"/>
+      </svg>
+      <div class="banner"><svg class="i" style="font-size:22px"><use href="#i-up"/></svg><div><b>Office</b><span>Ring Road</span></div></div>
+      <div class="eta"><span><b>18 min</b> · 12 km</span><span>ETA 12:10</span></div>
+      <span class="demo">DEMO TILE</span>
+    </div>
+
+    <div class="tile" id="media">
+      <div class="art"></div>
+      <div class="t">Radio · 98.3</div><div class="s">Morning drive</div>
+      <div class="ctl"><svg class="i"><use href="#i-prev"/></svg><svg class="i"><use href="#i-play"/></svg><svg class="i"><use href="#i-next"/></svg></div>
+      <span class="demo">DEMO TILE</span>
+    </div>
+
+    <div class="tile" id="insight" style="display:none"><div class="ic"><svg class="i"><use href="#i-warn"/></svg></div>
+      <div><div class="h">HEADS-UP</div><div class="it"></div></div><button class="chip" data-q="Any fault codes?">Tell me more</button></div>
+    <div id="home-hint">Tap the orb or press <b>Space</b> and ask about your car</div>
+
+    <div id="orb" role="button" aria-label="Ask VehicleGPT" tabindex="0">
+      <div class="halo"></div>
+      <svg class="ring" viewBox="0 0 120 120"><circle cx="60" cy="60" r="44" stroke-dasharray="190 90" transform="rotate(-60 60 60)"/></svg>
+      <div class="ell"></div>
+      <div class="core"></div>
+      <div class="lbl">EV Assistant</div>
+    </div>
+    <canvas id="wave" width="1444" height="480"></canvas>
+
+    <div id="panel">
+      <button class="x" id="close" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+      <div class="view v-listen">
+        <h1 id="lt">Listening…</h1>
+        <p id="ls">Ask me about your car.</p>
+        <div class="chips" id="topics"></div>
+        <div class="micnote" id="micnote"></div>
+        <form class="askbox" id="askform" autocomplete="off">
+          <input id="q" placeholder="Or type your question…" maxlength="300">
+          <button type="submit" aria-label="Ask"><svg class="i"><use href="#i-send"/></svg></button>
+        </form>
+      </div>
+      <div class="view v-think">
+        <div class="qbubble"><div class="q" id="tq"></div>
+          <div class="steps">
+            <span class="step" data-s="0"><i></i>Understanding the question</span>
+            <span class="step" data-s="1"><i></i>Reading 8 weeks of vehicle memory</span>
+            <span class="step" data-s="2"><i></i>Checking every number</span>
+          </div></div>
+      </div>
+      <div class="view v-answer" id="ans"></div>
+      <div class="view v-bye"><h1>Happy to help.</h1><p>You can ask me anything about your EV, anytime.</p></div>
+    </div>
+
+    <aside id="drawer"></aside>
+
+    <nav class="dock">
+      <button class="on" data-go="home"><svg class="i"><use href="#i-home"/></svg>Home</button>
+      <button data-go="ev"><svg class="i"><use href="#i-ev"/></svg>EV Connect</button>
+      <button data-go="nav"><svg class="i"><use href="#i-nav"/></svg>Navigation</button>
+      <button data-go="media"><svg class="i"><use href="#i-music"/></svg>Media</button>
+      <button data-go="phone"><svg class="i"><use href="#i-phone"/></svg>Phone</button>
+      <button data-go="settings"><svg class="i"><use href="#i-gear"/></svg>Settings</button>
+    </nav>
+
+    <div id="scrim"></div>
+    <div class="modal" id="m-onboard">
+      <h2>Meet your EV Assistant</h2>
+      <div class="sub">Your car has answers. Just ask.</div>
+      <div class="mini"><svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="32" stroke-dasharray="140 61" transform="rotate(-60 42 42)"/></svg><div class="core"></div></div>
+      <p>Understand your range, battery, charging and faults by voice. Answers come from your car's own data, and every number is checked before you see it.</p>
+      <div class="quote">“How much range do I have left?”</div>
+      <button class="btn p" id="ob-try">Try the assistant</button>
+      <button class="btn s" id="ob-later">Maybe later</button>
+    </div>
+    <div class="modal" id="m-mic">
+      <h2>Let's get you talking</h2>
+      <div class="micbig"><svg class="i"><use href="#i-mic"/></svg></div>
+      <p id="mic-p">Allow microphone access to ask your EV Assistant questions by voice.</p>
+      <p class="fine" id="mic-fine">Speech is turned into text on this car. Audio is never stored or sent anywhere.</p>
+      <button class="btn p" id="mic-allow">Allow microphone</button>
+      <button class="btn s" id="mic-not">Not now, I'll type</button>
+    </div>
+    <div class="modal" id="m-settings" style="text-align:left">
+      <h2>Assistant settings</h2>
+      <div class="sw" style="margin-top:12px"><div>Speak answers<small>Uses an on-device voice only</small></div><button class="tog" id="t-speak"></button></div>
+      <div class="sw"><div>Glance mode while driving<small>Headline and voice only when the car is moving</small></div><button class="tog" id="t-glance"></button></div>
+      <div class="sw"><div>Eco motion<small>Fewer animations, less processor use</small></div><button class="tog" id="t-eco"></button></div>
+      <div class="sw"><div>Voice input<small id="stt-s">checking…</small></div><button class="tog" id="t-mic"></button></div>
+      <div class="sw"><div>Privacy<small>All answers are computed in the car. 0 bytes leave it.</small></div></div>
+      <button class="btn s" id="s-onb">Show the introduction again</button>
+      <button class="btn s" id="s-console">Open engineer console</button>
+      <button class="btn p" id="s-done">Done</button>
+    </div>
+    <div id="toast"></div>
+  </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const scr = $("#screen"), body = document.body;
+const params = new URLSearchParams(location.search);
+if (params.get("bezel") === "0") body.classList.remove("bezel");
+const mem = {get(k, d){try{const v = localStorage.getItem("vg." + k); return v === null ? d : JSON.parse(v);}catch(e){return d;}},
+             set(k, v){try{localStorage.setItem("vg." + k, JSON.stringify(v));}catch(e){}}};
+const S = {state: "home", status: null, turns: [], speak: mem.get("speak", true), eco: mem.get("eco", false),
+           mic: mem.get("mic", false), glance: mem.get("glance", false), stt: false, last: null, rec: null};
+if (params.get("fresh") === "1") mem.set("onboarded", false);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const icon = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------------- fit to window ---------------- */
+function fit(){
+  const st = $("#stage"), w = st.offsetWidth, h = st.offsetHeight;
+  const k = Math.min(innerWidth / w, innerHeight / h);
+  st.style.transform = `translate(-50%,-50%) scale(${k})`;
+}
+addEventListener("resize", fit);
+
+/* ---------------- state machine ---------------- */
+function setState(s){
+  S.state = s;
+  scr.className = "s-" + s + (S.speaking ? " s-speak" : "") + (S.glance && S.status && S.status.moving ? " glance" : "");
+  body.classList.toggle("live", ["listen","think","answer"].includes(s));
+  wake();
+  if (s === "listen" || S.speaking) startWave();
+}
+function toast(t){const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), 2600);}
+
+/* idle: pause decorative animation after 15 s so the head unit spends ~0 CPU when nobody asks */
+let idleT;
+function wake(){body.classList.remove("rest"); clearTimeout(idleT); idleT = setTimeout(() => { if (S.state === "home") body.classList.add("rest"); }, 15000);}
+["pointerdown","keydown"].forEach(e => addEventListener(e, wake));
+function applyEco(){body.classList.toggle("eco", S.eco); $("#t-eco").classList.toggle("on", S.eco);}
+
+/* ---------------- vehicle status (home tiles) ---------------- */
+async function loadStatus(){
+  try{
+    const s = await (await fetch("/api/status")).json(); S.status = s; S.stt = !!s.stt;
+    $("#clock").textContent = s.vehicle_clock || "--";
+    $("#soc").textContent = s.soc ?? "--"; $("#range").textContent = s.range_km ?? "--";
+    $("#socbar").style.width = (s.soc || 0) + "%";
+    $("#egress").textContent = s.external_connections === 0 ? "0 B sent" : "offline";
+    const h = [];
+    if ((s.active_dtcs || []).length) h.push(`<span class="pill warn">${icon("warn")}${s.active_dtcs.length} active fault</span>`);
+    else h.push(`<span class="pill">${icon("check")}All systems normal</span>`);
+    if (s.battery_temp != null) h.push(`<span class="pill">${icon("thermo")}${s.battery_temp} °C</span>`);
+    $("#health").innerHTML = h.join("");
+    $("#carstate").textContent = s.moving ? "DRIVING" : "PARKED";
+    const codes = Object.entries(s.active_dtc_names || {});
+    $("#insight").style.display = codes.length ? "" : "none";
+    if (codes.length) $("#insight .it").textContent = `${codes[0][1]} (${codes[0][0]})`;
+    scr.classList.toggle("glance", !!(s.moving && S.glance));
+    $("#stt-s").textContent = S.stt ? "On-device speech model ready" : "Speech model not installed: type instead";
+    $("#t-mic").classList.toggle("on", S.stt && S.mic);
+  }catch(e){ $("#clock").textContent = "offline"; }
+}
+
+/* ---------------- open / close the assistant ---------------- */
+function openAssistant(){
+  if (S.state === "answer" || S.state === "listen") { listen(); return; }
+  if (!mem.get("onboarded", false)) return setState("onboard");
+  listen();
+}
+function listen(){
+  setState("listen");
+  $("#lt").textContent = "Listening…"; $("#ls").textContent = "Ask me about your car.";
+  $("#q").value = "";
+  if (S.stt && S.mic) { $("#micnote").textContent = "Speak now. Tap the orb when you're done."; startMic(); }
+  else { $("#lt").textContent = "I'm listening"; $("#micnote").textContent = S.stt ? "Voice is off in Settings." : "Voice needs the on-device speech model. Typing works offline too.";
+         setTimeout(() => $("#q").focus(), 350); }
+}
+async function closeAssistant(){
+  stopMic(true); stopSpeak(); $("#drawer").classList.remove("open");
+  if (S.state === "answer") { setState("bye"); await sleep(1700); }
+  if (["bye","listen","think","answer"].includes(S.state)) setState("home");
+}
+$("#orb").addEventListener("click", () => {
+  if (S.rec) return stopMic(false);
+  if (S.speaking) { stopSpeak(); return; }
+  if (["home","answer","bye"].includes(S.state)) openAssistant();
+});
+$("#close").addEventListener("click", closeAssistant);
+$("#scrim").addEventListener("click", () => setState("home"));
+$("#ob-try").addEventListener("click", () => { mem.set("onboarded", true); setState("mic"); prepMicCard(); });
+$("#ob-later").addEventListener("click", () => { mem.set("onboarded", true); setState("home"); });
+function prepMicCard(){
+  if (!S.stt) {
+    $("#mic-p").textContent = "Voice input needs the on-device speech model, which isn't installed on this unit yet.";
+    $("#mic-fine").textContent = "When it is, speech is turned into text inside the car. Audio never leaves it.";
+    $("#mic-allow").textContent = "OK, I'll type for now";
+  }
+}
+$("#mic-allow").addEventListener("click", async () => {
+  if (S.stt) { try{ const st = await navigator.mediaDevices.getUserMedia({audio:true}); st.getTracks().forEach(t => t.stop()); S.mic = true; mem.set("mic", true);}catch(e){ toast("Microphone not available. You can type instead."); } }
+  listen();
+});
+$("#mic-not").addEventListener("click", () => { S.mic = false; mem.set("mic", false); listen(); });
+$("#askform").addEventListener("submit", e => { e.preventDefault(); const q = $("#q").value.trim(); if (q) ask(q); });
+const TOPICS = {"Battery":"Is my battery healthy?","Range":"How much range do I have left?","Charging":"Show my charging history",
+                "Efficiency":"Why has my range dropped?","Faults":"Any fault codes?"};
+$("#topics").innerHTML = Object.keys(TOPICS).map(k => `<button class="chip" data-q="${esc(TOPICS[k])}">${k}</button>`).join("");
+document.addEventListener("click", e => { const c = e.target.closest("[data-q]"); if (c) ask(c.dataset.q); });
+
+/* dock + settings */
+$$(".dock button").forEach(b => b.addEventListener("click", () => {
+  const g = b.dataset.go;
+  if (g === "settings") { setState("settings"); return; }
+  if (g === "home") { closeAssistant(); return; }
+  if (g === "ev") { ask("How much range do I have left?"); return; }
+  toast("Demo tile: only the assistant is part of this prototype");
+}));
+$("#t-speak").addEventListener("click", () => { S.speak = !S.speak; mem.set("speak", S.speak); $("#t-speak").classList.toggle("on", S.speak); });
+$("#t-glance").addEventListener("click", () => { S.glance = !S.glance; mem.set("glance", S.glance); $("#t-glance").classList.toggle("on", S.glance);
+  scr.classList.toggle("glance", !!(S.status && S.status.moving && S.glance)); });
+$("#t-eco").addEventListener("click", () => { S.eco = !S.eco; mem.set("eco", S.eco); applyEco(); });
+$("#t-mic").addEventListener("click", () => { if (!S.stt) return toast("Install the speech model first: python scripts/get_model.py --speech");
+  S.mic = !S.mic; mem.set("mic", S.mic); $("#t-mic").classList.toggle("on", S.mic); });
+$("#s-done").addEventListener("click", () => setState("home"));
+$("#s-onb").addEventListener("click", () => { mem.set("onboarded", false); setState("onboard"); });
+$("#s-console").addEventListener("click", () => { location.href = "/console"; });
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") { if (e.key === "Escape") closeAssistant(); return; }
+  if (e.key === " " || e.key === "/") { e.preventDefault(); openAssistant(); }
+  if (e.key === "Escape") { if ($("#drawer").classList.contains("open")) $("#drawer").classList.remove("open"); else if (["onboard","mic","settings"].includes(S.state)) setState("home"); else closeAssistant(); }
+  if (e.key === "b" || e.key === "B") { body.classList.toggle("bezel"); fit(); }
+});
+
+/* ---------------- ask ---------------- */
+async function ask(q){
+  stopMic(true); stopSpeak();
+  $("#tq").textContent = q;
+  $$(".step").forEach(s => s.className = "step");
+  setState("think");
+  const steps = $$(".step"); let k = 0;
+  steps[0].classList.add("on");
+  const tick = setInterval(() => { if (k < steps.length - 1) { steps[k].className = "step done"; k++; steps[k].classList.add("on"); } }, 260);
+  const t0 = performance.now();
+  let a;
+  try { a = await (await fetch("/api/ask", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({question:q})})).json(); }
+  catch(e){ a = {what:"I couldn't reach the vehicle data service.", ui:{cards:[], follow:[], say:"", kind:"answer"}, verified:false, why:[], proof:[], evidence:[], timings_ms:{}}; }
+  const wall = performance.now() - t0;
+  await sleep(Math.max(0, 780 - wall));     // let the three steps play; the measured time shown is the real one
+  clearInterval(tick); steps.forEach(s => s.className = "step done");
+  await sleep(120);
+  S.turns.push({q, a}); S.last = a;
+  render(a, wall);
+  setState("answer");
+  requestAnimationFrame(() => $$(".card").forEach((c, i) => setTimeout(() => c.classList.add("in"), 90 * i)));
+  speak(a.ui && a.ui.say);
+}
+
+function bars(n){ let s = '<span class="bars">'; for (let i = 1; i <= 5; i++) s += `<b class="${i <= n ? "f" : ""}"></b>`; return s + "</span>"; }
+function render(a, wall){
+  const u = a.ui || {cards: [], follow: []};
+  const p = S.turns[S.turns.length - 2];
+  const hist = p ? `<div class="hist">Earlier: <b>${esc(p.q)}</b> → ${esc((p.a.ui && p.a.ui.say) || p.a.what)}</div>` : "";
+  const h = u.hero;
+  let top;
+  if (u.kind === "refuse") top = `<div class="shield">${icon("shield")}</div><div class="what big">${esc(a.what)}</div>`;
+  else if (h) top = `<div class="hero"><span class="gl">Driving · full details when parked</span></div><div class="hero"><span class="v">${esc(h.value)}</span>${h.unit ? `<span class="u">${esc(h.unit)}</span>` : ""}<span class="l">${esc(h.label)}</span></div><div class="what">${esc(a.what)}</div>`;
+  else top = `<div class="what big">${esc(a.what)}</div>` + ((a.details || []).length ? `<div class="what">${a.details.slice(0,5).map(esc).join("<br>")}</div>` : "");
+  const cards = (u.cards || []).map(c => {
+    const lvl = c.bars != null && c.bars > 0;
+    const val = lvl ? `${bars(c.bars)}<span class="hi">${esc(c.value)}</span>` : esc(c.value);
+    const meter = c.meter != null ? `<div class="meter"><i style="width:${Math.max(0, Math.min(100, c.meter))}%"></i></div>` : "";
+    return `<div class="card ${c.tone || ""}"><div class="ic">${icon(c.icon || "dot")}</div><div><div class="n">${esc(c.name)}</div><div class="val${c.small ? " sm" : ""}">${val}</div>${c.sub ? `<div class="sub">${esc(c.sub)}</div>` : ""}${meter}</div></div>`;
+  }).join("");
+  const ch = a.chart ? chartSvg(a.chart) : "";
+  const ok = a.verified && u.ui_verified !== false;
+  const ms = a.timings_ms && a.timings_ms.total != null ? a.timings_ms.total : wall;
+  const path = a.path === "SMART" ? "planned by on-device AI" : (a.path === "MEANING-SEARCH" ? "memory search" : "instant playbook");
+  const trust = `<button class="trust ${ok ? "" : "bad"}" id="how">${icon(ok ? "check" : "warn")}${ok ? "Every number checked" : "Some numbers unchecked"} · ${path} · ${ms < 1 ? "<1 ms" : ms < 1000 ? Math.round(ms) + " ms" : (ms/1000).toFixed(1) + " s"}</button>`;
+  const tip = a.next ? `<div class="tip">${icon("bulb")}<span>${esc(a.next)}</span></div>` : "";
+  const follow = (u.follow || []).map(q => `<button class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join("");
+  $("#ans").className = "view v-answer" + (u.kind === "refuse" ? " refuse" : "");
+  $("#ans").innerHTML = `${hist}<div class="aq">${esc(a.question || "")}</div>${top}
+    ${cards || ch ? `<div class="body"><div class="cards">${cards}</div>${ch}</div>` : ""}
+    ${tip}
+    <div class="foot"><div class="follow">${follow}</div></div>
+    <div class="foot" style="margin-top:12px">${trust}<div class="ready">Ready to listen<button id="again" aria-label="Ask again">${icon("mic")}</button></div></div>`;
+  $("#how").addEventListener("click", () => openDrawer(a));
+  $("#again").addEventListener("click", listen);
+  if (!ch && !cards) $("#ans .what") && null;
+}
+function openDrawer(a){
+  const d = $("#drawer");
+  const plan = a.plan || {};
+  d.innerHTML = `<button class="x" onclick="this.parentNode.classList.remove('open')">${icon("x")}</button>
+    <h3>How I know</h3><div class="meta">Answer type: ${esc(a.intent)} · path: ${esc(a.path)} · confidence: ${esc(a.confidence)}</div>
+    ${(a.why || []).length ? `<h4>Why</h4><ul>${a.why.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
+    ${(a.proof || []).length ? `<h4>Proof</h4><table>${a.proof.map(p => `<tr><td>${esc(p.label)}</td><td>${esc(p.value)}</td></tr>`).join("")}</table>` : ""}
+    ${(a.evidence || []).length ? `<h4>Data used</h4><ul>${a.evidence.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
+    <h4>Checks</h4><div class="meta">Numbers verified against computed facts: ${a.verified ? "yes" : "no"}${(a.unverified || []).length ? " (unverified: " + esc(a.unverified.join(", ")) + ")" : ""}<br>
+    Time: ${Object.entries(a.timings_ms || {}).map(([k, v]) => `${esc(k)} ${Number(v).toFixed(1)} ms`).join(" · ")}<br>
+    Read-only: the assistant cannot send any command to the car.</div>`;
+  d.classList.add("open");
+}
+
+/* ---------------- mini chart (time-ordered labels from the engine) ---------------- */
+function chartSvg(c){
+  const W = 226, H = 120, pl = 30, pb = 22, pt = 6, vals = (c.values || []).map(Number);
+  if (!vals.length) return "";
+  const lo = Math.min(0, ...vals), hi = Math.max(...vals, lo + 1e-6);
+  const y = v => pt + (H - pt - pb) * (1 - (v - lo) / (hi - lo));
+  let g = `<line x1="${pl}" y1="${y(lo)}" x2="${W}" y2="${y(lo)}" stroke="rgba(255,255,255,.15)"/>`;
+  g += `<text x="${pl - 4}" y="${y(hi) + 4}" fill="#8d989d" font-size="9" text-anchor="end">${hi.toFixed(hi < 10 ? 1 : 0)}</text>`;
+  g += `<text x="${pl - 4}" y="${y(lo)}" fill="#8d989d" font-size="9" text-anchor="end">${lo.toFixed(lo !== 0 && Math.abs(lo) < 10 ? 1 : 0)}</text>`;
+  const n = vals.length, labs = c.labels || [];
+  if (c.type === "bar") {
+    const bw = (W - pl) / n * .58;
+    vals.forEach((v, i) => { const x = pl + (W - pl) / n * (i + .21), yy = y(Math.max(v, 0)), h = Math.abs(y(v) - y(0));
+      g += `<rect x="${x}" y="${v >= 0 ? yy : y(0)}" width="${bw}" height="${Math.max(h, 1)}" rx="3" fill="${i === 0 ? "#3fe3dc" : "rgba(63,227,220,.45)"}"/>`;
+      const words = String(labs[i] || "").split(" "), half = Math.ceil(words.length / 2);
+      g += `<text x="${x + bw / 2}" y="${H - 9}" fill="#8d989d" font-size="8.5" text-anchor="middle">${esc(words.slice(0, half).join(" "))}</text>`;
+      g += `<text x="${x + bw / 2}" y="${H}" fill="#8d989d" font-size="8.5" text-anchor="middle">${esc(words.slice(half).join(" "))}</text>`; });
+  } else {
+    const x = i => pl + (W - pl - 4) * (n === 1 ? .5 : i / (n - 1));
+    const hl = c.highlight;
+    if (hl && hl.length === 2) g += `<rect x="${x(hl[0])}" y="${pt}" width="${Math.max(2, x(hl[1]) - x(hl[0]))}" height="${H - pt - pb}" fill="rgba(233,182,92,.12)"/>`;
+    const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    g += `<polyline points="${pts}" fill="none" stroke="#3fe3dc" stroke-width="1.8" stroke-linejoin="round"/>`;
+    g += `<text x="${pl}" y="${H - 4}" fill="#8d989d" font-size="8.5">${esc(labs[0] || "")}</text><text x="${W}" y="${H - 4}" fill="#8d989d" font-size="8.5" text-anchor="end">${esc(labs[n - 1] || "")}</text>`;
+  }
+  return `<div class="chart"><div class="t">${esc(c.title)}${c.unit ? " · " + esc(c.unit) : ""}</div><svg viewBox="0 0 ${W} ${H}">${g}</svg></div>`;
+}
+
+/* ---------------- voice out: on-device voices only ---------------- */
+function localVoice(){
+  if (!("speechSynthesis" in window)) return null;
+  const v = speechSynthesis.getVoices().filter(v => v.localService && v.lang && v.lang.toLowerCase().startsWith("en"));
+  return v.find(x => /en-IN/i.test(x.lang)) || v.find(x => /en-GB/i.test(x.lang)) || v[0] || null;
+}
+function speak(text){
+  if (!S.speak || !text) return;
+  const v = localVoice(); if (!v) return;          // never fall back to a network voice
+  const u = new SpeechSynthesisUtterance(text); u.voice = v; u.rate = 1.02;
+  u.onstart = () => { S.speaking = true; scr.classList.add("s-speak"); startWave(); };
+  u.onend = u.onerror = () => { S.speaking = false; scr.classList.remove("s-speak"); };
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+function stopSpeak(){ if ("speechSynthesis" in window) speechSynthesis.cancel(); S.speaking = false; scr.classList.remove("s-speak"); }
+if ("speechSynthesis" in window) speechSynthesis.getVoices();
+
+/* ---------------- voice in: mic -> WAV -> on-device whisper.cpp (/api/listen) ---------------- */
+let level = 0;
+async function startMic(){
+  if (S.rec) return;
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const src = ac.createMediaStreamSource(stream), an = ac.createAnalyser(); an.fftSize = 1024; src.connect(an);
+    const proc = ac.createScriptProcessor(4096, 1, 1); src.connect(proc); proc.connect(ac.destination);
+    const R = S.rec = {stream, ac, an, proc, chunks: [], t0: performance.now(), heard: 0, quiet: 0};
+    const buf = new Float32Array(an.fftSize);
+    proc.onaudioprocess = e => {
+      const d = e.inputBuffer.getChannelData(0); R.chunks.push(new Float32Array(d));
+      an.getFloatTimeDomainData(buf); let s = 0; for (const v of buf) s += v * v; const rms = Math.sqrt(s / buf.length);
+      level = Math.min(1, rms * 9);
+      const dt = d.length / ac.sampleRate;
+      if (rms > 0.02) { R.heard += dt; R.quiet = 0; } else R.quiet += dt;
+      if ((R.heard > 0.3 && R.quiet > 1.2) || performance.now() - R.t0 > 9000) stopMic(false);
+    };
+  }catch(e){ S.rec = null; toast("Microphone unavailable. Type your question instead."); $("#q").focus(); }
+}
+async function stopMic(cancel){
+  const R = S.rec; if (!R) return; S.rec = null; level = 0;
+  R.proc.disconnect(); R.stream.getTracks().forEach(t => t.stop());
+  const rate = R.ac.sampleRate; R.ac.close();
+  if (cancel || R.heard < 0.3) return;
+  $("#lt").textContent = "Got it…"; $("#ls").textContent = "Turning speech into text on this car";
+  const wav = toWav(R.chunks, rate);
+  try{
+    const r = await (await fetch("/api/listen", {method:"POST", headers:{"Content-Type":"audio/wav"}, body: wav})).json();
+    if (r.text) { ask(r.text); } else { $("#lt").textContent = "Sorry, I didn't catch that"; $("#ls").textContent = "Try again or type below."; }
+  }catch(e){ toast("Speech service unavailable"); }
+}
+function toWav(chunks, rate){
+  const n = chunks.reduce((a, c) => a + c.length, 0), all = new Float32Array(n); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+  const ratio = rate / 16000, m = Math.floor(n / ratio), pcm = new Int16Array(m);
+  for (let i = 0; i < m; i++) { const a = Math.floor(i * ratio), b = Math.min(n, Math.floor((i + 1) * ratio)); let s = 0; for (let j = a; j < b; j++) s += all[j]; const v = s / Math.max(1, b - a); pcm[i] = Math.max(-1, Math.min(1, v)) * 32767; }
+  const buf = new ArrayBuffer(44 + pcm.length * 2), dv = new DataView(buf); const w = (p, s) => [...s].forEach((c, i) => dv.setUint8(p + i, c.charCodeAt(0)));
+  w(0, "RIFF"); dv.setUint32(4, 36 + pcm.length * 2, true); w(8, "WAVE"); w(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, 16000, true); dv.setUint32(28, 32000, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); w(36, "data"); dv.setUint32(40, pcm.length * 2, true);
+  new Int16Array(buf, 44).set(pcm); return new Blob([buf], {type: "audio/wav"});
+}
+
+/* ---------------- listening / speaking wave (drawn only while active) ---------------- */
+let waveOn = false;
+function startWave(){
+  if (waveOn) return; waveOn = true;
+  const cv = $("#wave"), g = cv.getContext("2d"), W = cv.width, H = cv.height; let t = 0, amp = 0;
+  const frame = () => {
+    const active = S.state === "listen" || S.speaking;
+    if (!active) { g.clearRect(0, 0, W, H); waveOn = false; return; }
+    const target = S.rec ? 0.15 + level * 1.4 : (S.speaking ? 0.55 + 0.35 * Math.sin(t * 7) * Math.sin(t * 2.3) : 0.22);
+    amp += (target - amp) * 0.12; t += S.eco ? 0.02 : 0.035;
+    g.clearRect(0, 0, W, H);
+    const cx = S.state === "listen" ? 0.73 * W : 0.5 * W;
+    const grad = g.createLinearGradient(0, 0, W, 0); grad.addColorStop(0, "rgba(63,227,220,0)"); grad.addColorStop(Math.max(0, cx / W - 0.3), "rgba(63,227,220,0)");
+    grad.addColorStop(cx / W, "rgba(63,227,220,1)"); grad.addColorStop(Math.min(1, cx / W + 0.25), "rgba(63,227,220,.5)"); grad.addColorStop(1, "rgba(63,227,220,0)");
+    for (let k = 0; k < 3; k++) {
+      g.beginPath();
+      for (let x = 0; x <= W; x += 6) {
+        const env = Math.exp(-Math.pow((x - cx) / (W * 0.13), 2));
+        const y = H / 2 + Math.sin(x * 0.012 + t * (2 + k) + k) * env * amp * (H * 0.32) * (1 - k * 0.25);
+        x ? g.lineTo(x, y) : g.moveTo(x, y);
+      }
+      g.globalAlpha = 0.85 - k * 0.25; g.strokeStyle = grad; g.lineWidth = 3 - k * 0.8; g.shadowColor = "rgba(63,227,220,.8)"; g.shadowBlur = 12; g.stroke();
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+/* ---------------- boot ---------------- */
+fit(); applyEco(); $("#t-speak").classList.toggle("on", S.speak); $("#t-glance").classList.toggle("on", S.glance);
+loadStatus().then(() => {
+  const q = params.get("q");
+  if (q) { mem.set("onboarded", true); ask(q); }
+  else if (!mem.get("onboarded", false)) setTimeout(() => setState("onboard"), 900);
+});
+setInterval(loadStatus, 30000);
+wake();
+</script>
+</body>
+</html>
