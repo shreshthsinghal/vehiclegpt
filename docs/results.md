@@ -55,3 +55,21 @@ Early warning: tyre anomaly flagged **26 Oct, 4 days before the car's own TPMS w
 - Neoverse-N2 cores are faster than Cortex-A55. Estimated SMART p95 on a real A55 (Lite): ~3 s; FAST path (common questions) stays in milliseconds. Plus/Pro profiles meet 2 s for SMART too.
 - Router accuracy on the golden set is optimistic (tuned once on its misses); blind accuracy will be reported separately.
 - The digital twin is synthetic (no CARLA: no GPU); real recorded datasets can be fed through the same adapters.
+
+
+## Phase 7: on-device voice (CI run 45134481754, GitHub ARM64, `taskset` 2 cores)
+12 questions (golden phrasings plus a safety command) were spoken by a synthetic voice (espeak-ng), transcribed by
+whisper.cpp, and answered by VehicleGPT. "Same analysis" means the spoken question routed to the same playbook as
+the typed one.
+
+| Model · settings | Same analysis as typed | Word error rate | Median time | Peak memory (only while transcribing) |
+|---|---|---|---|---|
+| **base.en · clip-sized window, greedy (default)** | **12/12** | **6.3%** | **1.36 s** | **222 MB** |
+| base.en · whisper defaults (30 s window, beam 5) | 12/12 | 7.9% | 8.88 s | 295 MB |
+| tiny.en · clip-sized window, greedy | 11/12 | 119% (one hallucinated run-on) | 0.69 s | 139 MB |
+| tiny.en · whisper defaults | 10/12 | 16.7% | 4.06 s | 187 MB |
+
+End to end through the head-unit server, "why has my range dropped" was heard as "Wifi's my range dropped" and still
+routed to `range_drop`, verified, with the screen's big number at 12.8%. The router tolerates mishearings because it
+matches meaning, not exact words.
+Caveat: a synthetic voice in a quiet room. Real cabins add road noise and accents; next step is to test with recordings of real voices.

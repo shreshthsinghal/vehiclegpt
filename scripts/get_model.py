@@ -1,8 +1,8 @@
 """Download the on-device language model (one-time, ~0.5 GB) into models/.
 
   python scripts/get_model.py
-  python scripts/get_model.py --speech        # on-device speech-to-text: whisper.cpp + ggml-tiny.en (~75 MB)
-  python scripts/get_model.py --speech base   # larger, more accurate speech model (~142 MB)
+  python scripts/get_model.py --speech        # on-device speech-to-text: whisper.cpp + ggml-base.en (~142 MB)
+  python scripts/get_model.py --speech tiny   # smaller, less accurate speech model (~75 MB)
 The download is the ONLY internet use; afterwards VehicleGPT runs fully offline.
 """
 import json
@@ -56,8 +56,8 @@ def speech():
     """whisper.cpp program + English speech model. Afterwards voice input works with no internet."""
     import platform
     import zipfile
-    size = sys.argv[sys.argv.index("--speech") + 1] if len(sys.argv) > sys.argv.index("--speech") + 1 else "tiny"
-    size = size if size in ("tiny", "base") else "tiny"
+    size = sys.argv[sys.argv.index("--speech") + 1] if len(sys.argv) > sys.argv.index("--speech") + 1 else "base"
+    size = size if size in ("tiny", "base") else "base"
     OUT.mkdir(exist_ok=True)
     model = OUT / f"ggml-{size}.en.bin"
     if not model.exists():
