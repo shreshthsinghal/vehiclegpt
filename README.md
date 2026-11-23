@@ -138,9 +138,9 @@ All 14 states are in `docs/screens/hmi/`.
 - **Barge-in:** tap the orb while it is speaking to interrupt and ask something else.
 
 Turn on the warm voice once: `python scripts/get_model.py --voice` (Kokoro, about 355 MB) or `--voice piper` (about 60 MB).
-Measured here (2 x86 vCPUs, `python -m eval.tts_eval`): first spoken words after **1.6 s median** (2.5 s max), real-time factor
-0.94, 650 MB peak. The screen answer itself appears in under 0.2 s, so the driver reads while the voice starts. CI times
-the same on 2 ARM cores.
+Measured on **2 ARM cores** (CI run 45220964838, `python -m eval.tts_eval`): first spoken words after **0.83 s median**
+(1.34 s max) over 10 answer types, real-time factor 0.51 (audio is made twice as fast as it plays, so speech never stalls), 601 MB peak
+while speaking. The screen answer itself appears in under 0.2 s.
 
 ## Present state, scenarios, advice and safety (fix round after user testing, 23 Nov)
 | Ask | What happens |
