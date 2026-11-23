@@ -1,0 +1,8 @@
+# Plus: Raspberry Pi 5 (4x Cortex-A76) + AI HAT+ 2 class, 4-8 GB. Measured stand-in: 4 cores, 4 GB, bigger model.
+name: plus
+cpus: 4
+ram_gb: 4
+model: Qwen_Qwen3-1.7B-Q4_K_M.gguf
+llama_args: [-t, "4", -c, "1024", -np, "1", --cache-ram, "0", -b, "256", -ub, "128", -fa, "on",
+             --cache-type-k, q8_0, --cache-type-v, q8_0]
+warm_days: 30

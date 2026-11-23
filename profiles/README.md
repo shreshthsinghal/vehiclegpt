@@ -1,3 +1,3 @@
-# profiles/
-
-Hardware profiles: lite.yaml (2x A55, 2 GB), plus.yaml (Pi 5 + AI HAT+ 2), pro.yaml (vehicle HPC). Only this file changes between targets.
+# Hardware profiles
+One container set for every target; only the profile changes (model size, threads, memory, retention).
+`python scripts/start_llm.py --profile lite|plus|pro`. Lite and Plus are measured in CI (see docs/results.md).

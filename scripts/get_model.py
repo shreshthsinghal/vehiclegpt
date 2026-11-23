@@ -8,7 +8,10 @@ import sys
 import urllib.request
 from pathlib import Path
 
-REPO = "bartowski/Qwen_Qwen3-0.6B-GGUF"
+REPOS = {"lite": "bartowski/Qwen_Qwen3-0.6B-GGUF", "plus": "bartowski/Qwen_Qwen3-1.7B-GGUF",
+         "pro": "bartowski/Qwen_Qwen3-4B-GGUF"}
+PROFILE = sys.argv[sys.argv.index("--profile") + 1] if "--profile" in sys.argv else "lite"
+REPO = REPOS[PROFILE]
 WANT = "Q4_K_M"
 OUT = Path(__file__).resolve().parents[1] / "models"
 

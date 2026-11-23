@@ -1,0 +1,7 @@
+# Pro: vehicle HPC / zonal compute with NPU, 8+ GB. Not measured in this prototype (no hardware); same containers.
+name: pro
+cpus: 8
+ram_gb: 8
+model: Qwen_Qwen3-4B-Q4_K_M.gguf
+llama_args: [-t, "8", -c, "2048", -np, "2", -fa, "on"]
+warm_days: 90

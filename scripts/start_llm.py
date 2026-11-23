@@ -15,16 +15,21 @@ exe = "llama-server.exe" if platform.system() == "Windows" else "llama-server"
 cands = [os.environ.get("VGPT_LLAMA_SERVER"), ROOT / "llama" / exe, ROOT / "llama.cpp" / "build" / "bin" / exe,
          shutil.which("llama-server")]
 server = next((Path(c) for c in cands if c and Path(c).exists()), None)
-model = next(iter(sorted((ROOT / "models").glob("*.gguf"))), None)
+import yaml
+prof_name = sys.argv[sys.argv.index("--profile") + 1] if "--profile" in sys.argv else "lite"
+profile = yaml.safe_load((ROOT / "profiles" / f"{prof_name}.yaml").read_text())
+model = ROOT / "models" / profile["model"]
+if not model.exists():
+    model = next(iter(sorted((ROOT / "models").glob("*.gguf"))), None)
 if not server:
     sys.exit(f"llama-server not found. Unzip the llama.cpp release into {ROOT / 'llama'} or set VGPT_LLAMA_SERVER.")
 if not model:
     sys.exit("No model in models/. Run: python scripts/get_model.py")
-cmd = [str(server), "-m", str(model), "-t", "2", "-c", "1024", "-np", "1", "--cache-ram", "0", "-b", "256", "-ub", "128", "-fa", "on",
-       "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--host", "127.0.0.1", "--port", "8080"]
-# Weight repacking: on ARM (the vehicle target) we disable it to save ~380 MB; on x86 laptops it is ~30% faster,
-# so we keep it unless --low-mem is given.
-if platform.machine().lower() in ("arm64", "aarch64") or "--low-mem" in sys.argv:
+args = [a for a in profile["llama_args"] if a != "--no-repack"]
+cmd = [str(server), "-m", str(model), *args, "--host", "127.0.0.1", "--port", "8080"]
+# Weight repacking: on ARM (the vehicle target) the lite profile disables it to save ~380 MB; on x86 laptops it is
+# ~30% faster, so we keep it there unless --low-mem is given.
+if "--no-repack" in profile["llama_args"] and (platform.machine().lower() in ("arm64", "aarch64") or "--low-mem" in sys.argv):
     cmd.append("--no-repack")
 print(" ".join(cmd))
 sys.exit(subprocess.call(cmd))

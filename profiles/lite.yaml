@@ -1,0 +1,8 @@
+# Lite: i.MX 93 class (2x Cortex-A55, 2 GB RAM). Measured stand-in: 2 Neoverse-N2 cores, 2 GB cgroup limit.
+name: lite
+cpus: 2
+ram_gb: 2
+model: Qwen_Qwen3-0.6B-Q4_K_M.gguf
+llama_args: [-t, "2", -c, "1024", -np, "1", --cache-ram, "0", -b, "256", -ub, "128", -fa, "on",
+             --cache-type-k, q8_0, --cache-type-v, q8_0, --no-repack]
+warm_days: 14
