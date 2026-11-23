@@ -21,7 +21,7 @@ from .router import Router, english
 SPLIT = re.compile(r"\?\s+(?=\w)|,?\s+and\s+(?=(?:what|how|did|does|do|is|was|were|which|when|why|where|has|have|are|any)\b)",
                    re.IGNORECASE)
 # Second parts the first playbook already answers itself (no second analysis needed).
-ABSORBED = {"efficiency_change": r"weather|temperature|rain|hot|cold", "before_event": r"still|active|issue|problem|fixed",
+ABSORBED = {"efficiency_change": r"weather|temperature|rain|hot|cold", "before_event": r"still|active|issue|problem|fixed|safe|mean",
             "trip_stats": r"battery|energy|kwh|charge|percent|%", "charging_history": r"health|degrad|affect|batter",
             "range_drop": r"why|cause|reason", "signal_trend": r"why|normal|unusual"}
 
@@ -45,7 +45,7 @@ class VehicleGPT:
                 if re.search(ABSORBED.get(ans.intent, r"^$"), part.lower()):
                     continue
                 r = self.router.route(part)
-                if not r.fast or r.intent in (ans.intent, "out_of_scope", "privacy") or r.intent not in PLAYBOOKS:
+                if not r.fast or r.intent in (ans.intent, "out_of_scope", "privacy", "not_recorded", "capabilities") or r.intent not in PLAYBOOKS:
                     continue
                 sub = self._ask_one(part, False)
                 ans.what = f"{ans.what} {sub.what}".strip()

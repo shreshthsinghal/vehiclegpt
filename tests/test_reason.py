@@ -108,3 +108,14 @@ def test_capabilities_present_state_scenarios_safety(full_store, tmp_path):
     assert a.intent == "vehicle_status_now" and "front camera" in a.what.lower()       # honest: no rear camera recorded
     a = vg.ask("can I drive 150 km on this charge?")
     assert a.intent == "what_if" and a.verified and any(f.name == "arrive" for f in a.facts)
+
+
+@pytest.mark.slow
+def test_external_ev1050_held_out(full_store, tmp_path):
+    """External 1,050-scenario dataset (shared by the user): held-out TEST split, never used for tuning.
+    Baseline before tuning was 163/342; every answer must stay verified."""
+    from eval.run_blind import main
+    s = main(False, "pytest", store_path=full_store[0], out_dir=tmp_path, file="external/ev1050_labeled.yaml",
+             split="test", quiet=True)
+    assert int(s["routing_ok"].split("/")[0]) >= 310 and s["verified"].split("/")[0] == s["verified"].split("/")[1]
+    assert s["by_kind"]["refuse"].split("/")[0] >= "85"

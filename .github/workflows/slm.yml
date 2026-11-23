@@ -60,6 +60,10 @@ jobs:
         run: |
           python -m eval.run_blind --file capability_questions.yaml --tag current | tail -1
           python -m eval.run_blind --file capability_questions.yaml --smart --tag current | tail -45
+      - name: External EV dataset, held-out test split (1,050 scenarios; baseline 163/342)
+        run: |
+          python -m eval.run_blind --file external/ev1050_labeled.yaml --split test --tag current --quiet | tail -1
+          python -m eval.run_blind --file external/ev1050_labeled.yaml --split test --smart --tag current --quiet | tail -25
       - name: Golden exam with SMART path
         run: |
           python -m eval.run_golden --smart | tail -40

@@ -104,3 +104,15 @@ topics:
     sources:
       - "https://www.ontariohyundai.com/ev-battery-warning-light/"
     context: [power_limit, batt_temp, soc, speed]
+
+  drowsy:
+    title: "Feeling sleepy while driving"
+    steps:
+      - "Drowsy driving is dangerous: plan to stop now, do not push on."
+      - "Take the next safe exit or rest area and park in a well-lit place."
+      - "Have a caffeinated drink, then take a 15–20 minute nap; caffeine starts working after about 30 minutes."
+      - "This is only a short-term fix. If you are still tired, rest longer or let someone else drive."
+    sources:
+      - "https://www.cdc.gov/niosh/work-hour-training-for-nurses/longhours/mod11/04.html"
+      - "https://www.nhtsa.gov/speeches-presentations/national-sleep-foundation-drowsy-driving-forum"
+    context: [speed, cabin_temp]

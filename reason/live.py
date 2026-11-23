@@ -173,17 +173,25 @@ def parse_scenario(q: str, plan: dict) -> dict:
     ql = q.lower()
     p = {"distance": plan.get("distance_km"), "speed": plan.get("speed_kmh"), "ac": plan.get("ac"),
          "target": plan.get("target_soc"), "charger": None, "road": None, "amb": None}
+    p["miles"] = bool(re.search(r"\bmiles?\b|\bmph\b|\bmi\b", ql))
     if not p["distance"]:
         m = re.search(NUM + r"\s*(km|kms|kilomet\w*)\b(?!\s*/\s*h|\s*per hour|ph)", ql)
-        p["distance"] = float(m.group(1)) if m else None
+        mm = re.search(NUM + r"\s*(miles?|mi)\b(?!\s*/\s*h|\s*per hour)", ql)
+        p["distance"] = float(m.group(1)) if m else (float(mm.group(1)) * MILE if mm else None)
+    if p["distance"] and re.search(r"and back|round.?trip|return trip|there and back", ql):
+        p["distance"] *= 2
+        p["round"] = True
     if not p["speed"]:
         pair = re.search(NUM + r"\s*(?:km/?h|kmph|kph)?\s*(?:vs\.?|versus|or|and)\s*" + NUM + r"\s*(?:km/?h|kmph|kph)", ql)
         m = re.findall(NUM + r"\s*(?:km/?h|kmph|kph)", ql)
         p["speed"] = [float(pair.group(1)), float(pair.group(2))] if pair else ([float(x) for x in m] if m else None)
+        mph = re.findall(NUM + r"\s*mph", ql)
+        if mph and not p["speed"]:
+            p["speed"] = [float(x) * MILE for x in mph]
     elif not isinstance(p["speed"], list):
         p["speed"] = [float(p["speed"])]
     p["place"] = None
-    mp = re.search(r"\b(?:to|reach|get to|make it to)\s+(?:the\s+)?([a-z]+)", ql)
+    mp = re.search(r"\b(?:to|reach|get to|make it to)\s+(?:the\s+)?(?:nearest\s+|closest\s+|my\s+)?([a-z']+)", ql)
     if mp and not p["distance"] and mp.group(1) not in ("charge", "charging", "full", "drive", "go", "my", "a", "an", "work", "office", "home"):
         p["place"] = mp.group(1)
     elif mp and not p["distance"] and mp.group(1) in ("work", "office", "home"):
@@ -191,13 +199,26 @@ def parse_scenario(q: str, plan: dict) -> dict:
     if p["ac"] in (None, "default"):
         p["ac"] = ("off" if re.search(r"(without|no|turn(ing)? off|switch(ing)? off|skip)\s+(the\s+)?(ac|a/c|air.?con\w*)|(ac|air.?con\w*)\s+off", ql)
                    else "on")
-    m = re.search(r"to\s+" + NUM + r"\s*%", ql)
+    m = re.search(r"(?:to|reach|until)\s+" + NUM + r"\s*%", ql)
     p["target"] = float(m.group(1)) if m else (100.0 if re.search(r"\bfull\b|100 ?%", ql) else p["target"])
+    m = re.search(r"(?:i'?m at|i am at|down to|i'?m down to|at|with|have|leave (?:now )?at)\s+" + NUM + r"\s*%(?:\s*(?:battery|charge|soc|right now|now))?", ql)
+    p["soc_given"] = float(m.group(1)) if m and not re.search(r"(at least|reach|charge to|charging to|get to|limit to)\s+" + m.group(1) + r"\s*%", ql[:m.end()]) else None
+    m = re.search(r"at least\s+" + NUM + r"\s*%", ql)
+    p["reserve"] = float(m.group(1)) if m else None
+    m = re.search(NUM + r"\s*kw\b", ql)
+    p["charger_kw"] = float(m.group(1)) if m else None
     p["charger"] = "DC_FAST" if re.search(r"fast|\bdc\b|rapid|supercharg", ql) else ("AC_HOME" if re.search(r"home|\bac charger|wall", ql) else None)
     p["road"] = "highway" if re.search(r"highway|motorway|expressway", ql) else ("city" if re.search(r"\bcity|town|traffic", ql) else None)
-    m = re.search(NUM + r"\s*(?:°|deg)", ql)
-    p["amb"] = float(m.group(1)) if m else None
+    m = re.search(r"(-?\d+(?:\.\d+)?)\s*(?:°|deg\w*)\s*(f\b|fahrenheit)?", ql)
+    p["amb"] = None
+    if m:
+        p["amb"] = (float(m.group(1)) - 32) * 5 / 9 if m.group(2) else float(m.group(1))
+    elif re.search(r"freezing|below zero|snow|icy", ql):
+        p["amb"] = 0.0
     return p
+
+
+MILE = 1.609344
 
 
 def what_if(ctx, q: str, plan: dict) -> Answer:
@@ -208,19 +229,44 @@ def what_if(ctx, q: str, plan: dict) -> Answer:
     p = parse_scenario(q, plan)
     soc, _ = latest(ctx, "soc")
     soc = soc if soc is not None else 80.0
+    if p.get("soc_given") is not None:
+        soc = p["soc_given"]
+        f("soc_given", r1(soc))
+        a.why.append(f"Using the {r1(soc)}% you gave me instead of the current reading.")
     cap = m["cap"]
     f("soc_now", r1(soc)); f("cap", r1(cap), "kWh", "median of your charging sessions"); f("n_model", m["n"])
     f("r2", round(m["r2"], 2)); f("r2pct", round(m["r2"] * 100)); f("base", r1(m["base"]), "kWh/100km", "your last 2 weeks")
     a.evidence += [f"consumption model fitted on {m['n']} of your trips (R² {round(m['r2'], 2)}): speed², stop-go, AC vs outside temperature",
                    "usable battery from your charging sessions", "WARM tier: current state of charge"]
-    reserve = 10.0
-    f("reserve", reserve, "%", "safety reserve")
+    reserve = p.get("reserve") or 10.0
+    f("reserve", r1(reserve), "%", "safety reserve")
+    amb_seen = [float(t["ambient_avg_c"]) for t in ctx.st.table("trips") if t["ambient_avg_c"] is not None]
+    lo, hi = min(amb_seen), max(amb_seen)
+    if p.get("amb") is not None and not lo - 3 <= p["amb"] <= hi + 3:
+        f("amb_lo", r1(lo)); f("amb_hi", r1(hi)); f("amb_q", r1(p["amb"]))
+        a.why.append(f"Caution: your car has only been driven at {r1(lo)}–{r1(hi)} °C outside, so a prediction for "
+                     f"{r1(p['amb'])} °C is uncertain. Cold weather adds cabin and battery heating that this car's data "
+                     f"cannot measure yet; expect less range than shown.")
+        a.confidence = "low"
+    unit_mi = p.get("miles")
+    cold = p.get("amb") is not None and p["amb"] < lo - 3
+    if p.get("amb") is not None:            # never extrapolate beyond the temperatures this car has seen
+        p["amb"] = min(max(p["amb"], lo), hi)
 
     # ---- how long to charge
     if re.search(r"how long|how much time|minutes|hours|time to charge|will it take|would it take", ql) and re.search(r"charg", ql):
         target = p["target"] or 80.0
-        kind = p["charger"] or "AC_HOME"
+        kind = p["charger"] or ("DC_FAST" if (p.get("charger_kw") or 0) > 22 else "AC_HOME")
         pw = m["power"].get(kind) or next(iter(m["power"].values()))
+        if p.get("charger_kw"):
+            seen = max([c["energy_added_kwh"] / (c["duration_min"] / 60) for c in ctx.st.table("charges")
+                        if c["charger"] == kind and c["duration_min"] > 5] or [pw])
+            f("charger_kw", r1(p["charger_kw"])); f("seen_kw", r1(seen)); f("pw_typ", r1(pw))
+            if p["charger_kw"] < pw:
+                pw = p["charger_kw"]
+            else:
+                a.why.append(f"The charger offers {r1(p['charger_kw'])} kW, but your car's sessions averaged about "
+                             f"{r1(pw)} kW (best {r1(seen)} kW), so I used your car's real rate.")
         need = max(0.0, (target - soc) / 100 * cap)
         hrs = need / pw
         if need <= 0:
@@ -256,6 +302,8 @@ def what_if(ctx, q: str, plan: dict) -> Answer:
         if amb is not None and p["ac"] == "on":
             c += (max(0, m["ac"][0] + m["ac"][1] * amb) - max(0, m["ac"][0] + m["ac"][1] * m["amb"])) / 36 * 100
         cons = [c]
+    if cold:                                # colder than any recorded drive: never more optimistic than usual
+        cons = [max(c, m["base"]) for c in cons]
     for i, c in enumerate(cons):
         f(f"cons{i}", r1(c), "kWh/100km", "model")
     if speeds:
@@ -266,9 +314,42 @@ def what_if(ctx, q: str, plan: dict) -> Answer:
     ac_txt = "with the AC off" if p["ac"] == "off" else "with the AC on"
     usable_now = soc / 100 * cap
 
+    # ---- how slow must I drive to make it
+    if p["distance"] and re.search(r"how (slow|fast) (do|should|must|can) i", ql):
+        d = p["distance"]
+        avail = (soc - reserve) / 100 * cap
+        best = None
+        for v in range(130, 29, -5):
+            if d * kwh100(m, v, 2.0 if v >= 60 else m["city_sg"], p["ac"] == "on", amb) / 100 <= avail:
+                best = v
+                break
+        f("dist", r1(d)); f("avail", r1(avail))
+        if best == 130:
+            f("vmax", best)
+            a.what = (f"You can cover {r1(d)} km" + (f" ({r1(d / MILE)} miles)" if unit_mi else "") + f" with {r1(soc)}% at "
+                      f"any normal speed, even averaging {best} km/h, and still keep {r1(reserve)}% in reserve.")
+            if unit_mi:
+                f("dist_mi", r1(d / MILE))
+        elif best:
+            f("vmax", best)
+            a.what = (f"To cover {r1(d)} km with {r1(soc)}% and keep {r1(reserve)}% in reserve, keep your average speed "
+                      f"at or below about {best} km/h" + (f" (about {round(best / MILE)} mph)" if unit_mi else "") + ".")
+            if unit_mi:
+                f("vmax_mph", round(best / MILE))
+        else:
+            a.what = f"Even at 30 km/h, {r1(d)} km needs more than the {r1(avail)} kWh you can use: charge first."
+            f("v30", 30)
+        a.why.append("Switch the AC off or to eco to stretch it further.")
+        a.plan["scenario"] = "speed_cap"
+        return a
+
     # ---- trip feasibility
     if p["distance"]:
         d = p["distance"]
+        if unit_mi:
+            f("dist_mi", r1(d / MILE))
+        if p.get("round"):
+            f("one_way", r1(d / 2))
         need = d * cons[0] / 100
         pct = need / cap * 100
         arrive = soc - pct
@@ -290,9 +371,14 @@ def what_if(ctx, q: str, plan: dict) -> Answer:
             f("add", r1(add)); f("start", r1(min(100, soc + add)))
             pw = m["power"].get("DC_FAST", 0) or m["power"].get("AC_HOME", 7)
             f("addmin", round(add / 100 * cap / pw * 60))
-            verdict = (f"Not safely: you would arrive with about {r1(arrive)}%. Charge to at least "
-                       f"{r1(min(100, soc + add))}% first (about {round(add / 100 * cap / pw * 60)} min on a fast charger).")
-        a.what = f"{r1(d)} km{how} needs about {r1(need)} kWh ({r1(pct)}% of the battery); you have {r1(soc)}% now. {verdict}"
+            short_km = max(0.0, -arrive / 100 * cap / (cons[0] / 100))
+            f("short_km", round(short_km))
+            verdict = ((f"No: you would run out about {round(short_km)} km short. " if arrive < 0 else
+                        f"Not safely: you would arrive with about {r1(arrive)}%. ") + "Charge to at least "
+                       f"{r1(min(100, soc + add))}% first (about {round(add / 100 * cap / pw * 60)} min on a fast charger)."
+                       + (" Drive gently with the AC off until then." if arrive < 0 else ""))
+        a.what = (f"{r1(d)} km" + (f" ({r1(d / MILE)} miles)" if unit_mi else "") + (" there and back" if p.get("round") else "")
+                  + f"{how} needs about {r1(need)} kWh ({r1(pct)}% of the battery); you have {r1(soc)}%. {verdict}")
         a.why.append(f"Estimated consumption {r1(cons[0])} kWh/100 km, from a model fitted on {m['n']} of your trips "
                      f"(explains {round(m['r2'] * 100)}% of trip-to-trip variation). Keep at least {r1(reserve)}% in reserve.")
         if p["ac"] == "on" and m["ac_base"] > 0.5:
@@ -327,9 +413,12 @@ def what_if(ctx, q: str, plan: dict) -> Answer:
             a.why.append(f"I don't know how far \"{p['place']}\" is: VehicleGPT has no maps and works offline. Tell me the "
                          f"distance, e.g. \"can I drive 150 km?\", and I'll check the trip.")
     else:
-        what = (f"at {r1(speeds[0])} km/h " if speeds else "") + ac_txt
+        what = ((f"at {r1(speeds[0])} km/h " + (f"({round(speeds[0] / MILE)} mph) " if unit_mi else "")) if speeds else "") + ac_txt
+        if speeds and unit_mi:
+            f("spd_mph", round(speeds[0] / MILE)); f("rng_mi", round(ranges[0] / MILE))
         a.what = (f"With {r1(soc)}% charge, {what} you'd have about {round(ranges[0])} km of range "
-                  f"(about {round(full[0])} km on a full battery); with your usual driving it is about {round(base_range)} km.")
+                  + (f"({round(ranges[0] / MILE)} miles) " if unit_mi else "")
+                  + f"(about {round(full[0])} km on a full battery); with your usual driving it is about {round(base_range)} km.")
         if p["ac"] == "off":
             f("gain_km", round(ranges[0] - base_range))
             a.why.append(f"Switching the AC off adds about {round(ranges[0] - base_range)} km at today's charge.")
@@ -472,10 +561,11 @@ EMERG = [
     ("overheat", r"batter\w* (is )?(overheating|too hot|getting hot)|overheat\w* (warning|now|while driving)|temperature warning|battery (temp|heat) (warning|light)"),
     ("blowout", r"(tyre|tire)s? (\w+ )?(burst|blew|blown|blow ?out|exploded|popped)|blow ?out|burst (tyre|tire)|flat (tyre|tire) while driving"),
     ("flood", r"flood|water.?logged|deep water|stalled in water|submerged"),
-    ("crash", r"\baccident\b|\bcrash(ed)?\b|collision|collided|hit (a|an|another|something|someone)"),
+    ("crash", r"\baccident\b|\bcrash(ed)?\b(?! ahead)|collision|collided|rear.?ended|hit (a|an|another|something|someone)"),
+    ("drowsy", r"sleepy|drowsy|falling asleep|can'?t keep my eyes|dozing|so tired|exhausted"),
     ("power_loss", r"(lost|losing|no|loss of) power|car (is )?slowing down (by|on) itself|limp mode|turtle mode"),
 ]
-HELP = r"\bjust\b|\bis stuck\b|(are|is) not working|is on fire|!|what (should|do|can|must) (i|we)|what to do|how (to|do i|should i|can i) (handle|deal|stop|react)|help|emergency|sos|\bnow\b|right now|suddenly|i('m| am)|my (brakes?|car|tyre|tire|accelerator|battery)|while (i'?m )?driving|is on fire|are on fire|if (my|the)"
+HELP = r"\bjust\b|i have a|i'?ve got a|we have a|feeling|i feel|\bis stuck\b|(are|is) not working|is on fire|!|what (should|do|can|must) (i|we)|what to do|how (to|do i|should i|can i) (handle|deal|stop|react)|help|emergency|sos|\bnow\b|right now|suddenly|i('m| am)|my (brakes?|car|tyre|tire|accelerator|battery)|while (i'?m )?driving|is on fire|are on fire|if (my|the)"
 HISTORY = r"\b(why did|when did|was there|were there|did (the|my) .* (ever|last)|how many|history|last (week|month)|yesterday|on \d{1,2} (oct|nov))\b"
 
 
@@ -486,7 +576,8 @@ def emergency_topic(q: str) -> str | None:
     for topic, pat in EMERG:
         if re.search(pat, ql):
             return topic
-    if re.search(r"\b(emergency|sos)\b", ql):
+    if re.search(r"\b(emergency|sos)\b(?! (room|braking|brake|door|services|vehicle|lane|stop))", ql) and not re.search(
+            r"make it to|route|navigate|elevation|station|reroute", ql):
         return "general"
     return None
 

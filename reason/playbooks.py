@@ -354,7 +354,7 @@ def adas_events(ctx: Ctx, q: str, plan: dict) -> Answer:
 # =============================================================== Q4 causal timeline
 WARN_KEYWORDS = [("LOW_12V_BATTERY", r"12 ?v|12-volt|low voltage|small battery|auxiliary battery"),
                  ("BATTERY_TEMP_HIGH", r"batter\w* .*(hot|heat|temp|overheat)|overheat|thermal|too hot|temperature (warning|alert)|heat|batter\w* (warning|alert|light)"),
-                 ("REDUCED_POWER", r"power|derat|limp"), ("CHECK_TYRE_PRESSURE", r"tyre|tire"),
+                 ("REDUCED_POWER", r"power|derat|limp|turtle"), ("CHECK_TYRE_PRESSURE", r"tyre|tire"),
                  ("LOW_12V_BATTERY", r"12 ?v|12-volt|low voltage"), ("CAMERA_UNAVAILABLE", r"camera")]
 
 
@@ -1120,6 +1120,14 @@ NOT_RECORDED_WHAT = {
                  "is the only driver-assist function recorded",
     "accident": "VehicleGPT does not receive crash or airbag signals, so it cannot confirm or rule out an accident",
     "horn": "the horn is not among the signals recorded on this car",
+    "unrecorded": "this car does not record that signal (for example fluid levels, tyre tread, road speed limits, "
+                  "odours or seat positions), so I can't check it",
+    "comfort": "I can't adjust the climate, seats or audio: VehicleGPT is read-only. Please use the car's own controls; "
+               "on a long drive, a short break helps too",
+    "online": "that needs live online services (maps, charger networks, prices, traffic, phone or streaming), and "
+              "VehicleGPT works offline on the car's own data by design. Your navigation or phone app can do this",
+    "manual": "that is owner's-manual or general EV knowledge, not something in the car's recorded data. An offline "
+              "owner's-manual search is on our roadmap",
 }
 RECORDED = ("battery (charge, health, temperature), range, driving energy and efficiency, charging sessions, tyre "
             "pressures, dashboard warnings, fault codes, lane-keep assist events, wipers/rain, speed and road type")
@@ -1129,8 +1137,10 @@ def not_recorded(ctx: Ctx, q: str, plan: dict) -> Answer:
     """Honest answer for things this car does not record: never answer something else instead."""
     from .router import not_recorded as kind_of
     a = Answer(q, "not_recorded")
-    kind = kind_of(q.lower()) or "media"
-    a.what = f"I can't answer that from this car's data: {NOT_RECORDED_WHAT[kind]}."
+    from .router import ONLINE, KNOWLEDGE
+    kind = kind_of(q.lower()) or ("online" if ONLINE.search(q.lower()) else "manual" if KNOWLEDGE.search(q.lower()) else "manual")
+    msg = NOT_RECORDED_WHAT[kind]
+    a.what = (msg[0].upper() + msg[1:] + "." if kind == "comfort" else f"I can't answer that from this car's data: {msg}.")
     a.why.append(f"What I do record: {RECORDED}.")
     f = a.fact
     if kind == "accident":
@@ -1163,6 +1173,9 @@ def refuse(ctx: Ctx, q: str, plan: dict) -> Answer:
         a.what += " Warnings are safety functions: I can explain any warning, but I will never hide or silence one."
     elif kind == "unsafe_command" and re.search(r"music|song|radio|volume|loud", q.lower()):
         a.what += " Very loud audio while driving can mask warning chimes and sirens."
+    elif kind == "unsafe_command" and re.search(r"temp|ac\b|a/c|climate|fan|seat|heater|window|mirror|light|wiper|defrost|"
+                                                 r"charge limit|charging target|schedule|mode|regen|cruise", q.lower()):
+        a.what += " Please use the car's own controls for that; I can tell you how it affects your range."
     return a
 
 

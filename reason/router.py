@@ -48,7 +48,45 @@ NOT_RECORDED = [
     ("collision", r"\bcollision|\baeb\b|emergency brak\w* (system|assist)|forward warning"),
     ("accident", r"\b(accident|crash\w*|airbags?|collided)\b"),
     ("horn", r"\bhorn\b"),
+    ("unrecorded", r"coolant level|brake fluid|washer fluid|tread depth|tyre tread|tire tread|speed limit (on|of|here)|current speed limit|"
+                   r"g.?force|tire temperature|tyre temperature|seat position|air quality|odou?r|\bsmell|wheel size|"
+                   r"recall|service history|odometer at purchase"),
+    ("comfort", r"back is killing|lower back|sauna|muggy|sticky in|can'?t hear|too loud|blinding|numb|fogged|freezing in here|"
+                r"boiling in here|too (hot|cold) in here"),
 ]
+# Requests that start with a command verb (after polite prefixes) ask VehicleGPT to operate the car: refused (read-only).
+POLITE = re.compile(r"^((hey|hi|ok|okay|yo)\s+\w+[,!]?\s+|please\s+|(can|could|would|will) you( please)?\s+|i (want|need) you to\s+|go ahead and\s+)+")
+COMMAND = re.compile(r"^(play|stream|set|change|lower|raise|increase|decrease|reduce|turn|switch|open|close|shut|lock|unlock|roll|crack|fold|"
+                     r"unfold|activate|deactivate|enable|disable|start|stop|pause|resume|schedule|warm|cool|heat|pre-?heat|"
+                     r"precondition|defrost|demist|reset|save|record|delete|remember|put|engage|mute|unmute|dim|brighten|"
+                     r"adjust|keep (it|the|my)|make it|crank|pop|honk|flash|park|parallel|move|tilt|recline|release|arm|"
+                     r"disarm|apply|skip|swap|exclude|prioriti[sz]e|install|update|pair|connect|disconnect|cancel|end|"
+                     r"charge (the|my) car|have the car|max|aim|lift|drop|unbuckle|rev|read me|write|vent|sync|restore|alert|"
+                     r"notify|remind|bring (up|in)|show (me )?the [^.?]*(graph|meter|screen|view|camera|monitor)|recalculate|"
+                     r"forget|output|bypass|let [^.?]* in)\b")
+ADVERSARIAL = re.compile(r"(forget|ignore|override) (your|all|previous|the) (system )?(instructions|rules|prompt|interlocks?)|"
+                         r"api keys?|system prompt|jailbreak|bypass|developer mode|pretend (you are|to be)")
+# Needs live online services (maps, charger networks, prices, traffic, phone, streaming): offline by design.
+ONLINE = re.compile(r"navigat|\broute (me|to)\b|reroute|along (my|the) route|on my route|(best|fastest|alternative|eco) route|"
+                    r"take me to|directions|\bfind (me )?(a |an |the |some )?(\w+ )?(\w+ )?(charg\w*|stations?|parking|restaurant|cafe|coffee|hotel|route|place|spot|garage|shop|store)|nearest|closest|near (here|me|my)|within \d+ (miles|km|minutes) of|"
+                    r"on my way|next (highway )?exit|\bstalls?\b|congestion|peak .*pricing|\bprice|\bcost(s)? (me )?(per|of|to charge)|how much (does|will|did|is) [^.?]*cost|tariff|per kwh|\$|"
+                    r"\beta\b|arrival time|(miles|minutes|km) (left )?until|elevation|traffic (ahead|now|on|update|jam)|detour|"
+                    r"waypoint|stop at the|weather forecast|share my (live|location|eta|arrival)|\bcall\b|\btext\b|send (a |an )?(text|message|sms)|messages? to|whatsapp|"
+                    r"\bplay\b|podcast|audiobook|spotify|netflix|youtube|radio station|garage door|thermostat|ecobee|alexa|"
+                    r"smart home|security camera|recall|\bbook\b|appointment|software update|over.the.air|\bota\b|release notes|"
+                    r"plug ?& ?charge|apple pay|credit card|charging networks?|supercharger|ionity|fastned|electrify america|evgo|"
+                    r"chargepoint|bp pulse|shell|tata power|rivian|hotel|restaurant|cafe|coffee|bakery|parking (garage|spot)|"
+                    r"wi-?fi|hotspot|bluetooth|nacs|level 2 charger|charger (is|are) (busy|free|available)|open stalls")
+# Owner's-manual / general EV knowledge (not in the car's recorded data).
+KNOWLEDGE = re.compile(r"^(explain how|why does (my car|it) (make|say)|how (do|can|should|would) (i|you|we)|how often should|where (is|are|do|can)|can (a|an|i) (regular|plug|use|tow|leave|jump)|"
+                       r"is it (bad|ok|okay|safe|normal|fine|better) (if|to)|should i|do i (still )?need (to|my|a)|what is the (best|right|recommended)|"
+                       r"why (does|do) (evs?|electric cars)|what (changes|happens) when i (put|switch)|how long does .* usually)")
+DATA_WORDS = re.compile(r"improv|increase|extend|save (battery|energy)|get more|more range|efficien|\bmy (range|battery|car|trips?|charging|efficiency|tyres?|tires?)\b.*\b(now|last|this|history|week|month|yesterday)|"
+                        r"\b(last|this) (week|month)|yesterday|history|recorded")
+ICON = re.compile(r"(icon|symbol|light|lamp|telltale)\b[^.?]*(dashboard|cluster|lit|came on|showing|popped up)|"
+                  r"what does (the|this|that|a) [^.?]*(icon|symbol|light) mean|(turtle|exclamation) (icon|symbol|mark)")
+
+
 # Common Hinglish words used in questions -> English (before routing and analysis).
 HINGLISH = [(r"\bhua tha kya\b|\bhui thi kya\b|\btha kya\b", "was there"), (r"\bkitn[aie]\b", "how much"),
             (r"\bkab\b", "when"), (r"\bky[ou]n\b", "why"), (r"\bgaa?di\b", "car"), (r"\bbaa?rish\b", "rain"),
@@ -67,7 +105,12 @@ SCENARIO = re.compile(r"\bwhat if\b|\bif i (drive|go|turn|switch|keep|travel|use
                       r"will i (make|reach|have enough|get)|(enough|sufficient) (charge|battery|range) (to|for)|"
                       r"how (long|much time) (will it take |would it take |does it take )?to (charge|fill)|(charge|charging) (to|till|until) \d+ ?%|"
                       r"\bwithout (the )?(ac|a/c|air.?con)|\d+ ?(km|kms) (trip|drive|journey)|trip of \d+|drive \d+ ?(km|kms)\b|"
-                      r"\bat \d+ ?(km/?h|kmph)|\d+ ?(km/?h|kmph)? (vs|versus|or) \d+ ?(km/?h|kmph)|\brange if\b|if i (didn'?t|don'?t) use")
+                      r"\bat \d+ ?(km/?h|kmph)|\d+ ?(km/?h|kmph)? (vs|versus|or) \d+ ?(km/?h|kmph)|\brange if\b|if i (didn'?t|don'?t) use|"
+                      r"(left|remaining) when i (reach|get|arrive)|when i (reach|get to|arrive)|get stranded|stranded before|"
+                      r"enough juice|still \d+ ?(km|kms|miles|mi)\b.*from|how (slow|fast) (do|should|must|can) i|"
+                      r"how many (miles|km|kms|kilomet\w*) can i|how long (to|until|till|will it take to) (reach|get to) \d+|"
+                      r"realistic range|range .*at -?\d+ ?°|do i need to charge before|range .* per hour|per hour .* charg|"
+                      r"\bi'?m at \d+ ?%|if i leave (now )?at \d+")
 
 
 def english(question: str) -> str:
@@ -122,16 +165,35 @@ class Router:
             return Route("privacy", 1.0, 1.0, True, [])
         from .live import NOW_WORDS, TREND_WORDS, emergency_topic
         from .catalogue import find as find_signals
+        if ADVERSARIAL.search(q):
+            return Route("unsafe_command", 1.0, 1.0, True, [])
         if emergency_topic(q):
             return Route("emergency", 1.0, 1.0, True, [])
         from .live import CAPS
         if re.search(CAPS, q):
             return Route("capabilities", 1.0, 1.0, True, [])
+        if ICON.search(q):
+            return Route("before_event", 1.0, 1.0, True, [])
+        if KNOWLEDGE.search(q) and not DATA_WORDS.search(q) and not SCENARIO.search(q):
+            return Route("not_recorded", 1.0, 1.0, True, [])
+        if COMMAND.search(POLITE.sub("", q).strip()) or re.search(r"update (my|the) (range|wheel|tyre|tire)", q):
+            return Route("unsafe_command", 1.0, 1.0, True, [])
+        if re.search(r"(only|just) getting \d+ ?kw|charging (speed|power|rate) (is )?(slow|low)|why (is|was) (my )?charging (so )?slow", q):
+            return Route("charging_history", 1.0, 1.0, True, [])
+        if re.search(r"(can|will) i make it|enough (charge|battery|range|juice)|get stranded|how (slow|fast) (do|should|must|can) i", q):
+            return Route("what_if", 1.0, 1.0, True, [])
+        if ONLINE.search(q) and not re.search(r"\d+ ?(km|kms|miles|mi)\b", q) or re.search(
+                r"\bfrom [a-z' ]+ to [a-z' ]+.*(charging stops?|how long|how far)|charging stops? (will|do) i need|mountain|downhill|"
+                r"uphill|wallet|paid charger|payment", q):
+            if not re.search(r"\bi'?m at \d+ ?%|if i leave (now )?at \d+|how long (to|until|till) (reach|get to) \d+", q):
+                return Route("not_recorded", 1.0, 1.0, True, [])
         if SCENARIO.search(q):
             return Route("what_if", 1.0, 1.0, True, [])
         asks_history = re.search(r"\b(why|when|what happened|did .* (turn|switch)|how many|how often|which|was there|were there)\b", q)
         if (UNSAFE.search(q) or CONTROL.search(q)) and not asks_history:
             return Route("unsafe_command", 1.0, 1.0, True, [])
+        if ONLINE.search(q):
+            return Route("not_recorded", 1.0, 1.0, True, [])
         if re.search(r"\b(rear|reverse|back(up)?|parking) cam", q):
             return Route("vehicle_status_now", 1.0, 1.0, True, [])
         if not_recorded(q):
