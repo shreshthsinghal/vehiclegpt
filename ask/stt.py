@@ -1,7 +1,8 @@
 """On-device speech-to-text for a noisy car cabin (sherpa-onnx; no cloud, no network).
 
 Pipeline for each spoken question (16 kHz mono):
-  1. noise suppression (optional, GTCRN, 0.5 MB): cleans steady road/fan noise
+  1. noise suppression: OFF by default (GTCRN tested: it removed noise but raised word errors, e.g. 18.8 -> 23.6%
+     in loud traffic, because the speech model was trained on noisy speech; VGPT_STT_FRONT=gtcrn turns it on)
   2. voice activity detection (Silero VAD, 0.6 MB): keeps only the parts where someone speaks, so horns,
      silence and engine noise before/after the question are never transcribed (no invented words)
   3. speech recognition: the selected offline model (see ENGINES)
@@ -89,7 +90,7 @@ def recognizer():
 
 @lru_cache(maxsize=1)
 def denoiser():
-    front = os.environ.get("VGPT_STT_FRONT", "gtcrn")
+    front = os.environ.get("VGPT_STT_FRONT", "none")      # measured: denoising first LOWERED accuracy
     p = model_dir() / "gtcrn_simple.onnx"
     if front != "gtcrn" or not p.exists():
         return None
