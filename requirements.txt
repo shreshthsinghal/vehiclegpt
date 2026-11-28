@@ -9,4 +9,5 @@ cryptography>=42    # AES-256-GCM encryption at rest (REMEMBER)
 sqlite-vec>=0.1.6   # vector search table
 psutil>=5.9         # memory + connection counters
 asammdf>=8.0        # MDF4 export for service engineers (ASK)
+sherpa-onnx>=1.12  # on-device voice input (speech recognition + voice detection), Apache-2.0
 pytest>=8.0

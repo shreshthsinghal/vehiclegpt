@@ -776,43 +776,89 @@ async function goodbye(){ setReady("Ready to listen", false); await say("Happy t
 
 /* ---------------- voice in: mic -> WAV -> on-device whisper.cpp (/api/listen) ---------------- */
 let level = 0;
+/* Live listening: the mic audio is streamed in small 16 kHz chunks to the car's own speech service on 127.0.0.1.
+   A neural voice detector there decides when the driver has finished (a loudness threshold can't tell a voice
+   from a horn or road noise). Falls back to "record, then send one WAV" for the older whisper.cpp setup. */
+function resampler(rate){                          // mic rate (44.1/48 kHz) -> 16 kHz, averaging each step (anti-alias)
+  const ratio = rate / 16000; let carry = new Float32Array(0), pos = 0;
+  return d => {
+    const all = new Float32Array(carry.length + d.length); all.set(carry); all.set(d, carry.length);
+    const out = [];
+    while (pos + ratio <= all.length){ const a = Math.floor(pos), b = Math.max(a + 1, Math.floor(pos + ratio)); let s = 0; for (let j = a; j < b; j++) s += all[j]; out.push(s / (b - a)); pos += ratio; }
+    const keep = Math.floor(pos); carry = all.slice(keep); pos -= keep;
+    const pcm = new Int16Array(out.length); for (let j = 0; j < out.length; j++) pcm[j] = Math.max(-1, Math.min(1, out[j])) * 32767; return pcm;
+  };
+}
+async function flushMic(R, last){
+  if (R.sending || !R.sid) return; if (!R.out.length && !last) return;
+  R.sending = true;
+  const n = R.out.reduce((a, c) => a + c.length, 0), pcm = new Int16Array(n); let o = 0; for (const c of R.out) { pcm.set(c, o); o += c.length; } R.out = [];
+  try{
+    const j = await (await fetch("/api/listen/chunk?id=" + R.sid, {method:"POST", body: pcm.buffer})).json();
+    if (j.speech_s !== undefined){ R.heard = j.speech_s; R.lastT = j.t; }
+    if (S.rec === R && !last){
+      if (j.ended) stopMic(false);
+      else if (R.opt.noSpeechMs && j.speech_s < 0.2 && j.t * 1000 > R.opt.noSpeechMs) stopMic(false);
+    }
+  }catch(e){}
+  R.sending = false;
+  if (S.rec === R && R.out.length) flushMic(R);
+}
 async function startMic(opt = {}){
   if (S.rec) return;
   stopSpeak();
   try{
-    const stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});
+    // echo cancellation removes the car's own voice/media from the mic; the browser's noise suppression is OFF
+    // because the speech model is trained on noisy speech and front-end denoising lowered accuracy in our tests.
+    const stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:false, autoGainControl:true}});
     const ac = new (window.AudioContext || window.webkitAudioContext)();
     const src = ac.createMediaStreamSource(stream), an = ac.createAnalyser(); an.fftSize = 1024; src.connect(an);
-    const proc = ac.createScriptProcessor(4096, 1, 1); src.connect(proc); proc.connect(ac.destination);
-    const R = S.rec = {stream, ac, an, proc, chunks: [], t0: performance.now(), heard: 0, quiet: 0, opt};
+    const proc = ac.createScriptProcessor(2048, 1, 1); src.connect(proc); proc.connect(ac.destination);
+    const R = S.rec = {stream, ac, an, proc, chunks: [], out: [], t0: performance.now(), heard: 0, quiet: 0, opt, sid: null, rs: resampler(ac.sampleRate)};
+    try{ const r = await fetch("/api/listen/start", {method:"POST"}); if (r.ok) R.sid = (await r.json()).id; }catch(e){}
     const buf = new Float32Array(an.fftSize);
     proc.onaudioprocess = e => {
-      const d = e.inputBuffer.getChannelData(0); R.chunks.push(new Float32Array(d));
+      if (S.rec !== R) return;
+      const d = new Float32Array(e.inputBuffer.getChannelData(0));
       an.getFloatTimeDomainData(buf); let s = 0; for (const v of buf) s += v * v; const rms = Math.sqrt(s / buf.length);
       level = Math.min(1, rms * 9);
+      const el = performance.now() - R.t0;
+      if (R.sid){ R.out.push(R.rs(d)); flushMic(R); if (el > 10500) stopMic(false); return; }
+      R.chunks.push(d);                                // fallback: loudness-based end of speech
       const dt = d.length / ac.sampleRate;
       if (rms > 0.02) { R.heard += dt; R.quiet = 0; } else R.quiet += dt;
-      if ((R.heard > 0.3 && R.quiet > 1.2) || performance.now() - R.t0 > 9000) stopMic(false);
-      else if (opt.noSpeechMs && R.heard < 0.2 && performance.now() - R.t0 > opt.noSpeechMs) stopMic(false);
+      if ((R.heard > 0.3 && R.quiet > 1.2) || el > 9000) stopMic(false);
+      else if (opt.noSpeechMs && R.heard < 0.2 && el > opt.noSpeechMs) stopMic(false);
     };
-  }catch(e){ S.rec = null; toast("Microphone unavailable. Type your question instead."); showKeyboard(true); }
+  }catch(e){ S.rec = null; toast("Microphone unavailable. Check the browser's microphone permission, or type instead."); showKeyboard(true); }
 }
 async function stopMic(cancel){
   const R = S.rec; if (!R) return; S.rec = null; level = 0;
   R.proc.disconnect(); R.stream.getTracks().forEach(t => t.stop());
   const rate = R.ac.sampleRate; R.ac.close();
   const follow = R.opt && R.opt.followup;
-  if (cancel) return;
-  if (R.heard < 0.3){
+  if (cancel){ if (R.sid) fetch("/api/listen/end?cancel=1&id=" + R.sid, {method:"POST"}).catch(() => {}); return; }
+  if (!R.sid && R.heard < 0.3){
     if (follow) return goodbye();
     $("#lt").textContent = "I didn't hear anything"; $("#ls").textContent = "Tap the orb and ask again.";
     return;
   }
   if (follow) setReady("Got it…", true);
   else { $("#lt").textContent = "Got it…"; $("#ls").textContent = "Turning speech into text on this car"; }
-  const wav = toWav(R.chunks, rate);
   try{
-    const r = await (await fetch("/api/listen", {method:"POST", headers:{"Content-Type":"audio/wav"}, body: wav})).json();
+    let r;
+    if (R.sid){
+      while (R.sending) await new Promise(res => setTimeout(res, 20));
+      await flushMic(R, true);
+      r = await (await fetch("/api/listen/end?id=" + R.sid, {method:"POST"})).json();
+      if (r.heard === false){
+        if (follow) return goodbye();
+        $("#lt").textContent = "I didn't hear a question"; $("#ls").textContent = "Tap the orb and ask again."; say("Sorry, I didn't catch that.");
+        return;
+      }
+    } else {
+      r = await (await fetch("/api/listen", {method:"POST", headers:{"Content-Type":"audio/wav"}, body: toWav(R.chunks, rate)})).json();
+    }
     const t = (r.text || "").trim();
     if (!t){
       if (follow) return goodbye();

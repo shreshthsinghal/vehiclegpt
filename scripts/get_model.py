@@ -1,8 +1,10 @@
 """Download the on-device language model (one-time, ~0.5 GB) into models/.
 
   python scripts/get_model.py
-  python scripts/get_model.py --speech        # on-device speech-to-text: whisper.cpp + ggml-base.en (~142 MB)
-  python scripts/get_model.py --speech tiny   # smaller, less accurate speech model (~75 MB)
+  python scripts/get_model.py --speech        # voice input: Parakeet-110M + Silero VAD via sherpa-onnx (~105 MB, works in traffic)
+  python scripts/get_model.py --speech moonshine-base   # alternative engines: parakeet-0.6b, moonshine-base,
+                                                        # moonshine-tiny, whisper-base (see ask/stt.py)
+  python scripts/get_model.py --speech whisper.cpp      # the older whisper.cpp path (base.en)
   python scripts/get_model.py --voice         # warm on-device voice: Kokoro-82M (~355 MB, Apache-2.0)
   python scripts/get_model.py --voice piper   # lighter on-device voice: Piper en_US-amy (~60 MB)
 The download is the ONLY internet use; afterwards VehicleGPT runs fully offline.
@@ -54,12 +56,43 @@ def _fetch(url: str, dest: Path):
     print(f"\nsaved {dest}")
 
 
+STT_RELEASE = "https://github.com/k2-fsa/sherpa-onnx/releases/download"
+
+
 def speech():
+    """Voice input: sherpa-onnx (pip wheel for Windows/Linux/macOS, x86 and ARM) + an English speech model +
+    the Silero voice detector, all from GitHub releases. Afterwards voice input works with no internet."""
+    import subprocess
+    import tarfile
+    sys.path.insert(0, str(OUT.parent))
+    from ask.stt import ENGINES, DEFAULT
+    arg = sys.argv[sys.argv.index("--speech") + 1] if len(sys.argv) > sys.argv.index("--speech") + 1 else DEFAULT
+    if arg in ("whisper.cpp", "tiny", "base"):
+        return speech_whisper_cpp("tiny" if arg == "tiny" else "base")
+    name = arg if arg in ENGINES else DEFAULT
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "sherpa-onnx>=1.12"])
+    d = OUT / "stt"; d.mkdir(parents=True, exist_ok=True)
+    for f in ("silero_vad.onnx",):
+        if not (d / f).exists():
+            _fetch(f"{STT_RELEASE}/asr-models/{f}", d / f)
+    folder = ENGINES[name]
+    if not (d / folder).exists():
+        tar = d / f"{folder}.tar.bz2"
+        _fetch(f"{STT_RELEASE}/asr-models/{folder}.tar.bz2", tar)
+        print("unpacking…")
+        with tarfile.open(tar) as t:
+            t.extractall(d, filter="data")
+        tar.unlink()
+    else:
+        print(f"already present: {d / folder}")
+    print(f"Voice input ready ({name}). Restart the server: python -m ask.server")
+    return True
+
+
+def speech_whisper_cpp(size: str = "base"):
     """whisper.cpp program + English speech model. Afterwards voice input works with no internet."""
     import platform
     import zipfile
-    size = sys.argv[sys.argv.index("--speech") + 1] if len(sys.argv) > sys.argv.index("--speech") + 1 else "base"
-    size = size if size in ("tiny", "base") else "base"
     OUT.mkdir(exist_ok=True)
     model = OUT / f"ggml-{size}.en.bin"
     if not model.exists():

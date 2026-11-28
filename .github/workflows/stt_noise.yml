@@ -1,0 +1,63 @@
+name: Voice input in noise (2 ARM cores)
+
+on:
+  push:
+    paths: ["ask/stt.py", "ask/itn.py", "eval/stt_bench.py", "eval/stt_speech.py", ".github/workflows/stt_noise.yml"]
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    name: speak 120 questions + mix with traffic noise
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13", cache: pip}
+      - run: pip install -r requirements.txt -r requirements-voice.txt
+      - uses: actions/cache@v4
+        with: {path: models/kokoro, key: kokoro-v1.0}
+      - run: python scripts/get_model.py --voice
+      - name: Noise recordings (ESC-50 traffic sounds; DEMAND in-car and street recordings)
+        run: |
+          git clone -q --depth 1 --filter=blob:none --sparse https://github.com/karolpiczak/ESC-50 esc50
+          git -C esc50 sparse-checkout set --no-cone 'meta/*' 'audio/*-43.wav' 'audio/*-44.wav' 'audio/*-42.wav' 'audio/*-10.wav' 'audio/*-16.wav' 'audio/*-45.wav'
+          mkdir -p demand && cd demand
+          for e in TCAR STRAFFIC; do curl -sL -o $e.zip "https://zenodo.org/records/1227121/files/${e}_16k.zip?download=1" && unzip -q $e.zip; done
+          ls -R | head
+      - run: python -m eval.stt_speech --n 60
+      - run: python -m eval.stt_bench mix --noise esc50 --demand demand
+      - uses: actions/upload-artifact@v4
+        with: {name: stt-eval, path: data/stt_eval, retention-days: 5}
+
+  engine:
+    needs: prepare
+    name: ${{ matrix.engine }} on 2 cores
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [parakeet-110m, parakeet-0.6b, moonshine-base, moonshine-tiny, whisper-base]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13", cache: pip}
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with: {name: stt-eval, path: data/stt_eval}
+      - run: python scripts/get_model.py --speech ${{ matrix.engine }}
+      - name: Score (same answer as typed / word errors / latency / memory)
+        run: taskset -c 0,1 python -m eval.stt_bench run ${{ matrix.engine }} --front none
+      - uses: actions/upload-artifact@v4
+        with: {name: "stt-${{ matrix.engine }}", path: "data/stt_eval/results/*.json"}
+
+  table:
+    needs: engine
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13"}
+      - run: pip install numpy soundfile pyyaml
+      - uses: actions/download-artifact@v4
+        with: {pattern: "stt-[pmw]*", path: data/stt_eval/results, merge-multiple: true}
+      - run: python -m eval.stt_bench table | tee -a $GITHUB_STEP_SUMMARY

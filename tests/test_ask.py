@@ -120,3 +120,27 @@ def test_warm_voice_layer(hmi):
         assert r.read(4) == b"RIFF"
     except urllib.error.HTTPError as err:
         assert err.code == 503                                        # no voice model installed: browser falls back
+
+
+def test_spoken_numbers_become_digits():
+    from ask.itn import written
+    assert written("I'm at sixty percent, can I make it two hundred and fifty kilometres") == "I'm at 60%, can I make it 250 km"
+    assert written("eighty versus one hundred ten kilometres per hour") == "80 vs 110 km/h"
+    assert written("how much kilowatt hours in the last sixty days") == "how much kWh in the last 60 days"
+    assert written("one more thing, no one asked") == "one more thing, no one asked"
+    assert written("what about eighty and ninety") == "what about 80 and 90"
+
+
+def test_live_listening_needs_a_real_voice():
+    """The end of a question is decided by the voice detector: steady road noise alone never counts as speech."""
+    from ask import stt
+    if not stt.available():
+        pytest.skip("speech model not installed")
+    import numpy as np
+    sid = stt.session_start()
+    rnd = np.random.default_rng(0)
+    noise = (np.cumsum(rnd.standard_normal(16000 * 3)) * 0.002).astype(np.float32)   # brown 'road' rumble
+    noise = np.clip(noise - noise.mean(), -0.5, 0.5)
+    r = stt.session_feed(sid, (noise * 32767).astype(np.int16).tobytes())
+    assert r["speech_s"] < 0.3 and not r["ended"]
+    assert stt.session_end(sid)["heard"] is False

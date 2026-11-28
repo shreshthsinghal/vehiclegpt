@@ -25,7 +25,7 @@ from reason.engine import VehicleGPT
 from reason.playbooks import SIGNALS, TYRE_COLS, WARN_NAMES
 from remember.build import STORE
 from safety.guards import COUNTERS
-from ask import present, speech, tts
+from ask import present, speech, stt, tts
 import yaml
 DTC_NAMES = yaml.safe_load((Path(__file__).resolve().parents[1] / "sense" / "dtc_dictionary.yaml").read_text())
 
@@ -107,7 +107,7 @@ class App:
                 "warnings": [WARN_NAMES.get(c, c) for c in active], "active_dtcs": sorted(set(dtcs)),
                 "active_dtc_names": {c: names.get(c, c) for c in set(dtcs)},
                 "moving": bool(spd.size and spd[-1] > 2),
-                "stt": speech.available(), "tts": tts.available(), **self.counters()}
+                "stt": stt.available() or speech.available(), "stt_engine": stt.engine_name() if stt.available() else ("whisper.cpp" if speech.available() else None), "tts": tts.available(), **self.counters()}
 
     def ask(self, question: str) -> dict:
         with self.lock:
@@ -294,12 +294,27 @@ def make_handler(app: App):
 
         def do_POST(self):
             u = urllib.parse.urlparse(self.path)
-            if u.path == "/api/listen":                       # on-device speech to text (audio never stored)
+            if u.path.startswith("/api/listen"):              # on-device speech to text (audio never stored)
                 n = int(self.headers.get("Content-Length", 0))
                 if n > speech.MAX_BYTES:
                     return self._send(413, {"error": "recording too long"})
+                data = self.rfile.read(n)
+                qs = urllib.parse.parse_qs(u.query)
+                sid = (qs.get("id") or [""])[0]
                 try:
-                    return self._send(200, speech.transcribe(self.rfile.read(n)))
+                    if u.path == "/api/listen":                # whole recording as a WAV
+                        return self._send(200, stt.transcribe(data) if stt.available() else speech.transcribe(data))
+                    if not stt.available():
+                        return self._send(503, {"error": "speech model not installed"})
+                    if u.path == "/api/listen/start":          # live: start, stream 16 kHz PCM chunks, end
+                        return self._send(200, {"id": stt.session_start()})
+                    if u.path == "/api/listen/chunk":
+                        return self._send(200, stt.session_feed(sid, data))
+                    if u.path == "/api/listen/end":
+                        return self._send(200, stt.session_end(sid, cancel="cancel" in qs))
+                    return self._send(404, {"error": "not found"})
+                except KeyError as exc:
+                    return self._send(410, {"error": str(exc), "text": ""})
                 except Exception as exc:          # noqa: BLE001
                     return self._send(400, {"error": str(exc), "text": ""})
             n = min(int(self.headers.get("Content-Length", 0)), 8192)
@@ -329,6 +344,14 @@ def serve(port: int = PORT, store_path: Path = STORE):
     app = App(store_path)
     srv = ThreadingHTTPServer(("127.0.0.1", port), make_handler(app))
 
+    def _warm_ears():                  # load the speech recogniser once so the first question is fast
+        if stt.available():
+            try:
+                stt.recognizer()
+            except Exception as exc:        # noqa: BLE001
+                print(f"voice input could not start: {exc}")
+    threading.Thread(target=_warm_ears, daemon=True).start()
+
     def _warm():                       # load the voice once and pre-make the phrases said most often
         if tts.available() == "none":
             return
@@ -342,6 +365,12 @@ def serve(port: int = PORT, store_path: Path = STORE):
     threading.Thread(target=_warm, daemon=True).start()
     print(f"VehicleGPT HMI on http://127.0.0.1:{port}  (loopback only; language model: "
           f"{'ON' if app.vg.planner else 'off'}; voice: {tts.available()})")
+    if stt.available():
+        print(f"Voice input: ON ({stt.engine_name()}, on-device, noise-robust)")
+    elif speech.available():
+        print("Voice input: ON (whisper.cpp). For better accuracy in traffic: python scripts/get_model.py --speech")
+    else:
+        print("Voice input: OFF. Turn it on once with:  python scripts/get_model.py --speech   (then restart)")
     print(f"PINs  service {app.roles['service']}  fleet {app.roles['fleet']}  validation {app.roles['validation']}"
           f"   (stored in {ROLES_FILE})")
     try:
