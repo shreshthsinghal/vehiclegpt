@@ -5,3 +5,4 @@ ram_gb: 8
 model: Qwen_Qwen3-4B-Q4_K_M.gguf
 llama_args: [-t, "8", -c, "2048", -np, "2", -fa, "on"]
 warm_days: 90
+stt_engine: parakeet-0.6b          # voice input (ask/stt.py); set VGPT_STT_ENGINE to override

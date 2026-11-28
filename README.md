@@ -109,14 +109,14 @@ re-checks every number the screen shows.
 | Inspiration feature | How it's done within the brief's limits |
 |---|---|
 | Glass panels, teal orb, animations | One offline HTML file (CSS + SVG + canvas): no web fonts, CDNs or images. Decorative motion pauses after 15 s idle (0% CPU); *Eco motion* turns it off. |
-| Voice in | Mic → WAV → `/api/listen` on 127.0.0.1 → **whisper.cpp** (base.en, 142 MB). The model loads only while transcribing; audio goes to a temp file that is deleted after transcription. No cloud speech API. Measured on 2 ARM cores: **12/12 spoken questions gave the same analysis as typed**, 6% word errors, **1.4 s** median, 222 MB peak only while transcribing. |
+| Voice in | **Works in traffic, fully on-device:** the mic streams to 127.0.0.1, where a neural voice detector (Silero VAD) decides when the driver has finished and **Parakeet-110M** (sherpa-onnx) transcribes. Spoken numbers become digits. Measured on 2 ARM cores with real in-car noise as loud as the voice: **98% of questions give the same answer as typed**; with horns and sirens as loud as the voice: 88%; **0.1 s** per question; 382 MB. Details: [docs/voice_input.md](docs/voice_input.md). |
 | Voice out | **Warm on-device voice**: Kokoro-82M (Apache-2.0, voice `af_heart`) served by `/api/speak` on 127.0.0.1, or Piper on very small boards. If no voice model is installed, the browser uses an on-device system voice only (never a network voice). |
 | "What's affecting your range" | Real Shapley-style attribution from the `range_drop` playbook (AC in heat vs stop-start traffic), with tyres and battery ruled out. |
 | Map / music tiles | Drawn placeholders marked *DEMO TILE* (no Google Maps, no real songs or album art). |
 | Driver distraction | *Glance mode while driving*: headline + two cards + voice; full details when parked. |
 | Safety | Refusals show a shield card; the assistant is read-only (CAN TX = 0). |
 
-Turn on voice input once: `python scripts/get_model.py --speech` (Windows downloads whisper.cpp automatically).
+Turn on voice input once: `python scripts/get_model.py --speech` (about 105 MB; pip wheel + models from GitHub releases, no compiler).
 Demo framing: `?bezel=0` removes the dashboard frame, **B** toggles it, `?fresh=1` replays onboarding, and `?q=...` asks directly.
 All 14 states are in `docs/screens/hmi/`.
 

@@ -6,3 +6,4 @@ model: Qwen_Qwen3-1.7B-Q4_K_M.gguf
 llama_args: [-t, "4", -c, "1024", -np, "1", --cache-ram, "0", -b, "256", -ub, "128", -fa, "on",
              --cache-type-k, q8_0, --cache-type-v, q8_0]
 warm_days: 30
+stt_engine: parakeet-0.6b          # voice input (ask/stt.py); set VGPT_STT_ENGINE to override
